@@ -1,8 +1,11 @@
 # CryoCapsule Dashboard
 
-Sci-fi кинематографический дашборд для экрана криокапсулы.
+Дашборд для экрана криокапсулы.
 
 ## Быстрый старт
+
+Устанавливаем node.js последнюю версию. Главное v22+
+Затем:
 
 ```bash
 npm install
@@ -43,8 +46,10 @@ VITE_POLL_INTERVAL=2000                     # Интервал опроса (м�
 ```json
 { "type": "patient_lift_up" }
 { "type": "patient_lift_down" }
+{ "type": "patient_lift_stop" }
 { "type": "tube_lift_up" }
 { "type": "tube_lift_down" }
+{ "type": "tube_lift_stop" }
 ```
 
 ## Pixel2 API
@@ -63,13 +68,15 @@ VITE_POLL_INTERVAL=2000                     # Интервал опроса (м�
   "power": "2840",
   "storageTime": "847д 14ч",
   "temperatureTrend": "stable",
-  "powerTrend": "up"
+  "powerTrend": "up",
+  "t1": "123",
+  "t2": "123"
 }
 ```
 
 Если Pixel2 недоступен — дашборд показывает демо-данные с реалистичным дрожанием.
 
-## Сборка для кионска
+## Сборка для киоска
 
 ```bash
 npm run build
