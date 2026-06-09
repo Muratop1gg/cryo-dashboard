@@ -25,16 +25,8 @@ export interface ActiveLift {
 
 export interface SensorData {
   temperature: string;
-  temperatureTrend?: "up" | "down" | "stable";
-  nitrogenPressure: string;
-  fillLevel: string;
-  patientId: string;
-  systemStatus: string;
-  humidity: string;
-  coolantFlow: string;
-  power: string;
-  powerTrend?: "up" | "down" | "stable";
+  systemStatus: "Простой" | "Сушка" | "Процедура" | "Авария";
   sessionTime: string;
-  t1: string;
-  t2: string;
+  s1: string;
+  s2: string;
 }

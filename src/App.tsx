@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
-import { usePixel2Data } from "./hooks/usePixel2Data";
 import { CapsuleEvent } from "./types";
 import { ToastManager } from "./components/ToastManager";
 
 export default function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [events, setEvents] = useState<CapsuleEvent[]>([]);
-  const { sensorData } = usePixel2Data();
+  const { sensorData, isConnected } = useWebSocket(); // Это для данных сенсоров
 
   const handleEvent = useCallback((event: CapsuleEvent) => {
     const id = Date.now().toString();
@@ -17,7 +16,8 @@ export default function App() {
     }, 4500);
   }, []);
 
-  useWebSocket(handleEvent);
+  // Используем хук только для событий (не для сенсоров)
+  useWebSocket(handleEvent); // <-- Используем правильный хук
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black font-display">
@@ -29,12 +29,10 @@ export default function App() {
       />
 
       {/* Soft dark overlay */}
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.45)" }} />
+      <div className="absolute inset-0 bg-black opacity-45" />
 
       {/* Scanlines */}
-      <div className="absolute inset-0 pointer-events-none" style={{
-        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px)",
-      }} />
+      <div className="absolute inset-0 pointer-events-none bg-[repeating-linear-gradient(0deg,transparent,transparent_3px,rgba(0,0,0,0.12)_3px,rgba(0,0,0,0.12)_4px)]" />
 
       {/* Vignette */}
       <div className="absolute inset-0 pointer-events-none" style={{
@@ -49,12 +47,10 @@ export default function App() {
 
           {/* Header card */}
           <GlassCard style={{ minWidth: 220, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
-            <div style={{ fontSize: 11, letterSpacing: "0.3em", color: "rgba(255,255,255,0.4)", fontFamily: "var(--fm)", textTransform: "uppercase" }}>
+            <div className="text-xs uppercase opacity-95 text-white tracking-[0.3em]">
               CryoOne
             </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "rgba(255,255,255,0.92)", letterSpacing: "0.12em", lineHeight: 1 }}>
-              ПРОЦЕДУРА
-            </div>
+            <Label>{isConnected ? "Подключен" : "Отключен"}</Label>
             <Clock />
           </GlassCard>
 
@@ -63,16 +59,10 @@ export default function App() {
 
           {/* System status */}
           <GlassCard style={{ minWidth: 200, display: "flex", alignItems: "center", gap: 14 }}>
-            <StatusPulse active />
+            <StatusPulse status={sensorData.systemStatus} />
             <div>
               <Label>СТАТУС</Label>
-              <div style={{
-                fontSize: 28, fontWeight: 700,
-                color: "rgba(255,255,255,0.92)",
-                letterSpacing: "0.05em",
-                fontFamily: "var(--fm)",
-                lineHeight: 1.1,
-              }}>
+              <div className="font-bold tracking-wider leading-tight text-3xl text-white opacity-92" >
                 {sensorData.systemStatus}
               </div>
             </div>
@@ -83,16 +73,16 @@ export default function App() {
         <div className="flex flex-col gap-16 justify-center items-center h-full">
           <div className="flex gap-5 justify-center items-center w-full">
             <GlassCard className="flex-1 max-w-3xl h-[30vh] flex items-center justify-center gap-5">
-              <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 36, lineHeight: 1 }}>
+              <div className="text-4xl text-white opacity-35">
                 <IconThermo />
               </div>
               <div>
                 <Label>ТЕМПЕРАТУРА</Label>
-                <BigValue value={sensorData.temperature} unit="°C" trend={sensorData.temperatureTrend} />
+                <BigValue value={sensorData.temperature} unit="°C" trend={sensorData.temperature} />
               </div>
             </GlassCard>
             <GlassCard className="flex-1 max-w-3xl h-[30vh] flex items-center justify-center gap-5">
-              <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 36, lineHeight: 1 }}>
+              <div className="text-4xl text-white opacity-35">
                 <IconTimer />
               </div>
               <div>
@@ -104,14 +94,14 @@ export default function App() {
           <div className="flex gap-[15vw] justify-center items-center w-full">
             <GlassCard className="flex-1 max-w-lg h-[10vh] flex items-center justify-center gap-5">
               <div>
-                <Label>Т1</Label>
-                <MidValue value={sensorData.t1} />
+                <Label>S1</Label>
+                <MidValue value={sensorData.s1} />
               </div>
             </GlassCard>
             <GlassCard className="flex-1 max-w-lg h-[10vh] flex items-center justify-center gap-5">
               <div>
-                <Label>Т2</Label>
-                <MidValue value={sensorData.t2} />
+                <Label>S2</Label>
+                <MidValue value={sensorData.s2} />
               </div>
             </GlassCard>
           </div>
@@ -126,16 +116,18 @@ export default function App() {
 // ─── Glass card ───────────────────────────────────────────────
 function GlassCard({ children, style, className }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) {
   return (
-    <div className={className} style={{
-      background: "rgba(255,255,255,0.10)",
-      backdropFilter: "blur(24px) saturate(140%)",
-      WebkitBackdropFilter: "blur(24px) saturate(140%)",
-      border: "1px solid rgba(255,255,255,0.18)",
-      borderRadius: 20,
-      padding: "20px 28px",
-      boxShadow: "0 2px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.22)",
-      ...style,
-    }}>
+    <div
+      className={`
+      ${className}
+      bg-[rgba(255,255,255,0.10)]
+      backdrop-blur-[24px] backdrop-saturate-[140%]
+      border border-[rgba(255,255,255,0.18)]
+      rounded-[20px]
+      py-5 px-7
+      shadow-[0_2px_32px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.22)]
+    `}
+      style={style}
+    >
       {children}
     </div>
   );
@@ -144,14 +136,7 @@ function GlassCard({ children, style, className }: { children: React.ReactNode; 
 // ─── Typography ───────────────────────────────────────────────
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      fontSize: 11,
-      letterSpacing: "0.3em",
-      color: "rgba(255,255,255,0.45)",
-      textTransform: "uppercase",
-      fontFamily: "var(--fm)",
-      marginBottom: 2,
-    }}>
+    <div className="text-[11px] tracking-[0.3em] text-white/45 uppercase mb-0.5">
       {children}
     </div>
   );
@@ -159,33 +144,20 @@ function Label({ children }: { children: React.ReactNode }) {
 
 function BigValue({ value, unit, trend }: { value: string; unit: string; trend?: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, lineHeight: 1 }}>
-      <span style={{
-        fontSize: "clamp(2.8rem, 4.5vw, 5rem)",
-        fontWeight: 700,
-        color: "rgba(255,255,255,0.95)",
-        fontFamily: "var(--fm)",
-        letterSpacing: "-0.02em",
-        lineHeight: 1,
-      }}>
+    <div className="flex items-end gap-2 leading-none">
+      <span className="text-[clamp(2.8rem,4.5vw,5rem)] font-bold text-white/95 tracking-[-0.02em] leading-none">
         {value}
       </span>
       {unit && (
-        <span style={{
-          fontSize: "clamp(1.2rem, 2vw, 1.8rem)",
-          color: "rgba(255,255,255,0.45)",
-          fontFamily: "var(--fm)",
-          marginBottom: 4,
-        }}>
+        <span className="text-[clamp(1.2rem,2vw,1.8rem)] text-white/45 mb-1">
           {unit}
         </span>
       )}
       {trend && trend !== "stable" && (
-        <span style={{
-          fontSize: 18,
-          marginBottom: 6,
-          color: trend === "up" ? "rgba(255,120,100,0.8)" : "rgba(120,220,180,0.8)",
-        }}>
+        <span className={`
+          text-[18px] mb-1.5
+          ${trend === "up" ? "text-[rgba(255,120,100,0.8)]" : "text-[rgba(120,220,180,0.8)]"}
+        `}>
           {trend === "up" ? "▲" : "▼"}
         </span>
       )}
@@ -195,32 +167,20 @@ function BigValue({ value, unit, trend }: { value: string; unit: string; trend?:
 
 function MidValue({ value, unit, trend }: { value: string; unit?: string; trend?: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 6, lineHeight: 1 }}>
-      <span style={{
-        fontSize: "clamp(1.8rem, 2.8vw, 3rem)",
-        fontWeight: 700,
-        color: "rgba(255,255,255,0.90)",
-        fontFamily: "var(--fm)",
-        letterSpacing: "-0.01em",
-        lineHeight: 1,
-      }}>
+    <div className="flex items-end gap-1.5 leading-none">
+      <span className="text-[clamp(1.8rem,2.8vw,3rem)] font-bold text-white/90 tracking-[-0.01em] leading-none">
         {value}
       </span>
       {unit && (
-        <span style={{
-          fontSize: "clamp(0.9rem, 1.3vw, 1.2rem)",
-          color: "rgba(255,255,255,0.40)",
-          fontFamily: "var(--fm)",
-          marginBottom: 3,
-        }}>
+        <span className="text-[clamp(0.9rem,1.3vw,1.2rem)] text-white/40 mb-[3px]">
           {unit}
         </span>
       )}
       {trend && trend !== "stable" && (
-        <span style={{
-          fontSize: 13, marginBottom: 4,
-          color: trend === "up" ? "rgba(255,120,100,0.7)" : "rgba(120,220,180,0.7)",
-        }}>
+        <span className={`
+          text-[13px] mb-1
+          ${trend === "up" ? "text-[rgba(255,120,100,0.7)]" : "text-[rgba(120,220,180,0.7)]"}
+        `}>
           {trend === "up" ? "▲" : "▼"}
         </span>
       )}
@@ -247,14 +207,31 @@ function MidValue({ value, unit, trend }: { value: string; unit?: string; trend?
 //   );
 // }
 
-function StatusPulse({ active }: { active: boolean }) {
+function StatusPulse({ status }: { status: "Простой" | "Сушка" | "Процедура" | "Авария" }) {
+  const color = () => {
+    switch (status) {
+      case "Авария":
+        return "rgba(255,100,80,0.8)"
+      case "Процедура":
+        return "rgba(120,220,180,0.7)"
+      case "Простой":
+        return "rgba(255, 255, 255,0.3)"
+      case "Сушка":
+        return "rgba(245, 167, 66, 0.9)"
+      default:
+        return "rgba(255, 255, 255,0.3)"
+    }
+  }
+
   return (
-    <div style={{ position: "relative", width: 12, height: 12, flexShrink: 0 }}>
-      <div style={{
-        position: "absolute", inset: 0, borderRadius: "50%",
-        background: active ? "rgba(160,230,180,0.9)" : "rgba(255,100,80,0.8)",
-        animation: active ? "pulseRing 2s ease-in-out infinite" : "none",
-      }} />
+    <div className="relative w-3 h-3 flex-shrink-0">
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: color(),
+          animation: status == "Процедура" ? "pulseRing 2s ease-in-out infinite" : "none",
+        }}
+      />
     </div>
   );
 }
@@ -268,7 +245,7 @@ function Clock() {
   return (
     <div style={{ fontFamily: "var(--fm)", color: "rgba(255,255,255,0.50)", fontSize: 13, letterSpacing: "0.1em" }}>
       {time.toLocaleTimeString("ru-RU")}
-      <span style={{ marginLeft: 8, opacity: 0.6 }}>
+      <span className="opacity-60 ml-2">
         {time.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}
       </span>
     </div>

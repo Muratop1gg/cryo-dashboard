@@ -56,7 +56,7 @@ export function ToastManager({ events }: ToastManagerProps) {
             }
 
             // Обработка событий движения
-            console.log("MOTION event received:", type);
+            // console.log("MOTION event received:", type);
 
             setActiveLifts((prev) => {
                 const newMap = new Map(prev);
@@ -69,14 +69,14 @@ export function ToastManager({ events }: ToastManagerProps) {
                     id: event.id || `${type}_${Date.now()}`,
                 });
 
-                console.log("Active lifts after update:", Array.from(newMap.keys()));
+                // console.log("Active lifts after update:", Array.from(newMap.keys()));
                 return newMap;
             });
         });
     }, [events]);
 
     const handleUnmount = (liftType: string) => {
-        console.log("Unmounting toast for:", liftType);
+        // console.log("Unmounting toast for:", liftType);
         setActiveLifts((prev) => {
             const newMap = new Map(prev);
             newMap.delete(liftType);

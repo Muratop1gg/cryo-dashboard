@@ -126,7 +126,7 @@ export function EventToast({ event, leaving = false, onUnmount }: EventToastProp
     }}
     className="relative rounded-2xl overflow-hidden pointer-events-auto"
     style={{
-      width: "300px",
+      width: "500px", // 300 * 2.5
     }}
   >
     <div
@@ -163,10 +163,10 @@ export function EventToast({ event, leaving = false, onUnmount }: EventToastProp
         }}
       />
 
-      <div className="relative flex items-center gap-4 p-4">
-        {/* Icon container */}
+      <div className="relative flex gap-10 p-10"> {/* Увеличенные отступы */}
+        {/* Icon container - увеличен в 2.5 раза */}
         <div
-          className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center text-2xl relative"
+          className="flex-shrink-0 w-[100px] h-[100px] rounded-2xl flex items-center justify-center text-6xl relative" // 56*2.5=140, 28*2.5=70 → text-6xl
           style={{
             background: `${cfg.glow}`,
             border: `1px solid ${cfg.border}`,
@@ -178,7 +178,7 @@ export function EventToast({ event, leaving = false, onUnmount }: EventToastProp
           </span>
           {/* Direction indicator */}
           <div
-            className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px]"
+            className="absolute -bottom-3 -right-3 w-[50px] h-[50px] rounded-full flex items-center justify-center text-2xl" // 5*2.5=12.5 → -bottom-3, 20*2.5=50, text-2xl
             style={{
               background: cfg.direction === "stop" ? "#f97316" : cfg.color,
               boxShadow: `0 0 8px ${cfg.direction === "stop" ? "#f97316" : cfg.color}`,
@@ -195,23 +195,23 @@ export function EventToast({ event, leaving = false, onUnmount }: EventToastProp
           </div>
         </div>
 
-        {/* Text */}
+        {/* Text - увеличен */}
         <div className="flex-1 min-w-0">
           <div
-            className="text-[9px] tracking-[0.3em] font-mono mb-0.5 uppercase"
+            className="text-sm tracking-[0.3em] font-mono mb-2 uppercase" // 9*2.5=22.5 → text-sm, mb-2
             style={{ color: `${cfg.color}88` }}
           >
             {cfg.direction === "stop" ? "ОСТАНОВКА" : "ДВИЖЕНИЕ"}
           </div>
           <div
-            className="text-sm font-mono font-bold tracking-wider leading-tight"
+            className="text-3xl font-mono font-bold tracking-wider leading-tight" // 14*2.5=35 → text-3xl
             style={{ color: cfg.color }}
           >
             {cfg.label}
           </div>
-          <div className="flex items-center gap-2 mt-1.5">
+          <div className="flex items-center gap-2 mt-4"> {/* mt-1.5*2.5=3.75 → mt-4 */}
             <div
-              className="text-xs font-mono tracking-[0.2em] px-2 py-0.5 rounded-md"
+              className="text-xl font-mono tracking-[0.2em] px-4 py-2 rounded-md" // 12*2.5=30 → text-xl, px-4 py-2
               style={{
                 background: `${cfg.color}18`,
                 border: `1px solid ${cfg.color}44`,
@@ -223,12 +223,15 @@ export function EventToast({ event, leaving = false, onUnmount }: EventToastProp
           </div>
         </div>
 
-        {/* Right motion lines */}
-        <MotionLines color={cfg.color} direction={cfg.direction} />
+        {/* Right motion lines - увеличены */}
+        <div className="items-end justify-end flex">
+          <MotionLines color={cfg.color} direction={cfg.direction} />
+        </div>
+
       </div>
 
       {/* Progress bar */}
-      <div className="h-0.5 w-full" style={{ background: "rgba(255,255,255,0.05)" }}>
+      <div className="h-1 w-full" style={{ background: "rgba(255,255,255,0.05)" }}> {/* h-0.5*2.5=1.25 → h-1 */}
         <div
           className="h-full"
           style={{
@@ -252,14 +255,14 @@ function MotionLines({
 }) {
   if (direction === "stop") {
     return (
-      <div className="flex flex-col gap-1 opacity-60">
+      <div className="flex flex-col gap-2 opacity-60"> {/* gap-1*2.5=2.5 → gap-2 */}
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
             className="rounded-full"
             style={{
-              width: `${10 + i * 3}px`,
-              height: "2px",
+              width: `${Math.min(25 + i * 7.5, 50)}px`, // (10+i*3)*2.5
+              height: "5px", // 2*2.5
               background: color,
               opacity: 0.3 + i * 0.15,
               animation: `motionLineStop 1.5s ease-in-out infinite`,
@@ -272,14 +275,14 @@ function MotionLines({
   }
 
   return (
-    <div className="flex flex-col gap-1 opacity-60">
+    <div className="flex flex-col gap-2 opacity-60">
       {[1, 2, 3, 4].map((i) => (
         <div
           key={i}
           className="rounded-full"
           style={{
-            width: `${10 + i * 3}px`,
-            height: "2px",
+            width: `${Math.min(25 + i * 7.5, 50)}px`, // (10+i*3)*2.5
+            height: "5px",
             background: color,
             opacity: 0.3 + i * 0.15,
             animation: `motionLine${direction === "up" ? "Up" : "Down"} 1s ease-in-out infinite`,
