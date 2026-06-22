@@ -78,7 +78,7 @@ export function useWebSocket(
         };
 
         ws.onerror = (err) => {
-          // console.warn("[WS] Error:", err);
+          console.warn("[WS] Error:", err);
           ws.close();
         };
       } catch (e) {
