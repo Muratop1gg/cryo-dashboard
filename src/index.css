@@ -25,6 +25,7 @@ body,
   background: #000;
   cursor: none;
   font-family: var(--fm);
+  user-select: none;
 }
 
 @keyframes arrowUp {
@@ -79,7 +80,7 @@ body,
   }
 }
 
-/* Subtle scrolling scan line
+/* Subtle scrolling scan line */
 body::after {
   content: '';
   position: fixed;
@@ -101,7 +102,7 @@ body::after {
   100% {
     transform: translateY(100vh);
   }
-} */
+}
 
 @keyframes pulseGlowStop {
 

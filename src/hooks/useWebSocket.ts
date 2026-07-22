@@ -1,23 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { SensorData, CapsuleEvent } from "../types";
+import { Event, SystemData } from "../types";
 
-// Demo data with realistic cryo values
-const MOCK_BASE: SensorData = {
-  temperature: "-196",
-  systemStatus: "Процедура",
-  sessionTime: "120",
-  s1: "37",
-  s2: "38"
-};
 
 // WebSocket URL
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws";
 
 
 export function useWebSocket(
-  onEvent?: (event: CapsuleEvent) => void
+  onEvent?: (event: Event) => void
 ) {
-  const [sensorData, setSensorData] = useState<SensorData>(MOCK_BASE);
+  const [sensorData, setSensorData] = useState<SystemData | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const onEventRef = useRef(onEvent);
@@ -40,27 +32,15 @@ export function useWebSocket(
         ws.onmessage = (msg) => {
           try {
             const data = JSON.parse(msg.data);
+            // console.log(data)
+
             if (data.type === "sensor_data") {
               // Обновляем данные сенсоров
-              const newSensorData: SensorData = {
-                temperature: data.data.temperature,
-                systemStatus: data.data.systemStatus,
-                sessionTime: data.data.sessionTime,
-                s1: data.data.s1,
-                s2: data.data.s2
-              };
-              setSensorData(newSensorData);
+              setSensorData(data.data as SystemData);
               // console.log("[WS] Sensor data updated:", newSensorData);
             }
             else if (data.type === "event" && onEventRef.current) {
-              // Обрабатываем событие
-              const event: CapsuleEvent = {
-                type: data.data.type,
-                timestamp: data.data.timestamp,
-                id: data.data.id,
-                sequence: data.data.sequence
-              };
-              onEventRef.current(event);
+              onEventRef.current(data.data as Event);
               // console.log("[WS] Event received:", event);
             }
             else if (data.type === "connection_established") {
