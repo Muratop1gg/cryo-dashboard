@@ -4,8 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Rajdhani", "sans-serif"],
-        mono: ["Share Tech Mono", "monospace"],
+        'manrope': ['Manrope', 'sans-serif'],
       },
     },
   },

@@ -213,13 +213,24 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
                             }} />
                         </div>
                         <p>Двигатель лебедки подъёмника пациента</p>
-                        <Toggle textDisplayed texts={["выкл", "вверх", "вниз"]} width={90} onChange={function () {
-                            console.log("");
-                        }} ></Toggle>
+                        <div className="flex gap-2">
+                            <Toggle onChange={function () {
+                                console.log("");
+                            }} ></Toggle>
+                            <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={function () {
+                                console.log("");
+                            }} ></Toggle>
+                        </div>
+
                         <p>Двигатель трубоподъемника</p>
-                        <Toggle textDisplayed texts={["выкл", "вверх", "вниз"]} width={90} onChange={function () {
-                            console.log("");
-                        }} ></Toggle>
+                        <div className="flex gap-2">
+                            <Toggle onChange={function () {
+                                console.log("");
+                            }} ></Toggle>
+                            <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={function () {
+                                console.log("");
+                            }} ></Toggle>
+                        </div>
                         <p>ТЭН</p>
                         <Toggle onChange={function () {
                             console.log("");
