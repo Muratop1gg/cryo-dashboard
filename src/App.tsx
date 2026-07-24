@@ -192,11 +192,6 @@ export default function App() {
           event.preventDefault();
           setIsMenuOpen(!isMenuOpen);
         }
-      } else {
-        if (event.key == 'Escape') {
-          event.preventDefault();
-          setIsMenuOpen(!isMenuOpen);
-        }
       }
     };
 
@@ -398,8 +393,8 @@ function GlassCard({ children, style, className }: { children: React.ReactNode; 
       className={`
       ${className}
       bg-[rgba(255,255,255,0.10)]
-      backdrop-blur-[24px] backdrop-saturate-[140%]
-      border border-[rgba(255,255,255,0.18)]
+      backdrop-blur-xl backdrop-saturate-140
+      border border-white/18
       rounded-[20px]
       py-5 px-7
       shadow-[0_2px_32px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.22)]
