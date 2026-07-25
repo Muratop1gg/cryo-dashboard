@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import Dialog from './Dialog'
-import { ColorPicker, ColorPickerFormat, ColorPickerHue, ColorPickerSelection } from './ui/color-picker'
+import { ColorPicker, ColorPickerHue, ColorPickerSelection } from './ui/color-picker'
 import Color from 'color'
+import Button from './button'
 
 interface DialogProps {
     open?: boolean
@@ -99,24 +100,24 @@ function LEDDialog({ open = false, onOpenChange, defaultColor = "#ffffff", onCol
                 </div>
 
 
-                <div className="gap-4 mt-2 flex justify-between">
+                <div className="gap-4 mt-2 flex justify-end">
                     <div
                         className={
-                            "flex w-46 h-8 justify-center gap-2 items-center rounded-lg bg-white/20 border border-white/18"
+                            "flex w-46 h-8 justify-center gap-2 mr-auto items-center rounded-lg bg-white/20 border border-white/18"
                         }
                     >
                         <p>Новый цвет:</p>
                         <div className="w-12 h-5 rounded-md" style={{ backgroundColor: color }}></div>
                     </div>
-                    <div onClick={handleOpen} className=
-                        "active:scale-[0.94] text-red-500 hover:bg-red-800/50 bg-red-800/30 border border-red-600/50 cursor-pointer  transition-all flex items-center justify-center w-24 h-8 rounded-lg">
+                    <Button variant="destructive" onClick={handleOpen}>
                         Отменить
-                    </div>
-                    <div onClick={() => onColorSave(color)} className="active:scale-[0.94] text-blue-500 hover:bg-blue-800/50 bg-blue-800/30 border border-blue-600/50 cursor-pointer transition-all flex items-center justify-center w-60 h-8 rounded-lg">Сохранить изменения
-                    </div>
+                    </Button>
+                    <Button variant="primary" onClick={() => onColorSave(color)} >
+                        Сохранить изменения
+                    </Button>
                 </div>
             </div>
-        </Dialog>
+        </Dialog >
     )
 }
 

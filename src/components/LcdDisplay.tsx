@@ -53,7 +53,7 @@ export function LcdDisplay({ label, value, unit, iconSvg, color, trend }: LcdDis
       <div className="flex items-center gap-4 px-5 py-4 flex-1">
         {/* Icon */}
         <div
-          className="flex-shrink-0 w-10 h-10 opacity-70"
+          className="shrink-0 w-10 h-10 opacity-70"
           style={{ color }}
         >
           {iconSvg}
@@ -86,7 +86,7 @@ export function LcdDisplay({ label, value, unit, iconSvg, color, trend }: LcdDis
           </div>
           {unit && (
             <span
-              className="font-mono text-lg mb-1 flex-shrink-0"
+              className="font-mono text-lg mb-1 shrink-0"
               style={{ color: `${color}80` }}
             >
               {unit}

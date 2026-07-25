@@ -31,6 +31,7 @@ export function useApi() {
         getSystemInfo: () => execute(() => api.getSystemInfo()),
         getActuatorsStatus: () => execute(() => api.getActuatorsStatus()),
         getLog: (lines?: number) => execute(() => api.getLog(lines)),
+
         updateSettings: (settings: api.UpdateSettings) => execute(() => api.updateSettings(settings)),
         motionCommand: (cmd: api.MotionCommands) => execute(() => api.motionCommand(cmd)),
         uiButtons: (cmd: api.UiButtons) => execute(() => api.uiButtons(cmd)),

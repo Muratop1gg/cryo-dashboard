@@ -261,6 +261,12 @@ export interface CommandResponse {
     data?: Record<string, any> | null;
 }
 
+export interface UnlockResponse {
+    status: 'success' | 'error';
+    message: string;
+    SubscriptionEndDate: string;
+}
+
 // ========== API ФУНКЦИИ ==========
 
 // --- GET запросы ---
@@ -329,8 +335,8 @@ export async function uiButtons(cmd: UiButtons): Promise<CommandResponse> {
 /**
  * Разблокировка системы (без интернета)
  */
-export async function securityUnlock(cmd: Security): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/security', {
+export async function securityUnlock(cmd: Security): Promise<UnlockResponse> {
+    return apiRequest<UnlockResponse>('/api/security', {
         method: 'POST',
         body: JSON.stringify(cmd),
     });

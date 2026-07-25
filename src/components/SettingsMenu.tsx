@@ -4,7 +4,8 @@ import Toggle from "./Toggle";
 import { Slider } from "./ui/slider";
 import WiFiDialog from "./WiFiDialog";
 import LEDDialog from "./LEDDialog";
-import { Input } from "./ui/input";
+import Button from "./button";
+import UnlockDialog from "./UnlockDialog";
 
 interface SettingsMenuProps {
     open?: boolean
@@ -47,6 +48,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
 
     const [wifiOpen, setIsWiFiOpen] = useState(false);
     const [ledOpen, setIsLEDOpen] = useState(false);
+    const [unlockOpen, setIsUnlockOpen] = useState(false);
     const [selectedColor, setSelectedColor] = useState<string>("#ffffff");
 
     const handleColorSave = (color: string) => {
@@ -64,6 +66,10 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
 
     const handleWifiDialog = () => {
         setIsWiFiOpen(!wifiOpen)
+    }
+
+    const handleUnlockDialog = () => {
+        setIsUnlockOpen(!unlockOpen)
     }
 
     const data: AdminInfo = {
@@ -284,45 +290,34 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
                                 <Toggle onChange={function () {
                                     console.log("");
                                 }} ></Toggle>
-
-                                <div
-                                    onClick={handleLEDDialog}
-                                    className={
-                                        "flex w-55 h-8 active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all justify-center gap-2 items-center rounded-lg bg-white/20 border border-white/18 shadow-sm"
-                                    }
-                                >
+                                <Button onClick={handleLEDDialog}>
                                     <p>Выбранный цвет:</p>
                                     <div className="w-12 h-5 rounded-md" style={{ backgroundColor: selectedColor }}></div>
-                                </div>
+                                </Button>
+
 
                             </div>
 
                             <div className="flex items-center justify-center w-80 gap-3 rounded-xl py-6 border border-white/18 bg-white/10">
                                 <div className="flex items-center justify-center">
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">OK
-                                    </div>
+                                    <Button className="w-22">OK</Button>
                                 </div>
                                 <div className="flex flex-col gap-8">
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">ESC</div>
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">RESET</div>
+                                    <Button className="w-22">ESC</Button>
+                                    <Button className="w-22" >RESET</Button>
                                 </div>
                                 <div className="flex items-center justify-center">
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">CONFIRM</div>
+                                    <Button className="w-22">CONFIRM</Button>
                                 </div>
                             </div>
                             <div className="flex flex-col gap-2">
-                                <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-80 h-8 rounded-lg bg-white/20 border border-white/18">Разблокировать установку
+                                <Button onClick={handleUnlockDialog}>Разблокировать установку</Button>
+                                <div className="flex gap-4 justify-between">
+                                    <Button className="w-full">Self Test</Button>
+                                    <Button className="w-full">Dry Self Test</Button>
                                 </div>
-                                <div className="flex gap-4 justify-between w-80">
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-full h-8 rounded-lg bg-white/20 border border-white/18">Self-test
-                                    </div>
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-full h-8 rounded-lg bg-white/20 border border-white/18">Dry self-test
-                                    </div>
-                                </div>
-                                <div onClick={handleWifiDialog} className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-80 h-8 rounded-lg bg-white/20 border border-white/18">Настройка WiFi
-                                </div>
-                                <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-80 h-8 rounded-lg bg-white/20 border border-white/18">Привязать контроллер / пульт
-                                </div>
+                                <Button onClick={handleWifiDialog} className="w-full">Настройка WiFI</Button>
+                                <Button className="w-full" disabled>Привязать контроллер / пульт</Button>
                             </div>
                         </div>
                         <div className="border border-white/18 my-3" />
@@ -352,11 +347,13 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
                         </div>
                         <div className="border border-white/18 my-3" />
                         <div className="gap-4 mt-6 flex justify-end">
-                            <div onClick={handleOpen} className="active:scale-[0.94] text-red-500 cursor-pointer hover:bg-red-800/50 transition-all flex items-center justify-center w-24 h-8 rounded-lg bg-red-800/30 border border-red-600/50">
+                            <Button variant="destructive" onClick={handleOpen}>
                                 Отменить
-                            </div>
-                            <div className="active:scale-[0.94] text-blue-500 hover:bg-blue-800/50 bg-blue-800/30 border border-blue-600/50 cursor-pointer transition-all flex items-center justify-center w-60 h-8 rounded-lg">Сохранить изменения
-                            </div>
+                            </Button>
+                            <Button variant="primary" onClick={handleOpen}>
+                                Сохранить изменения
+                            </Button>
+
                         </div>
 
                     </div>
@@ -365,6 +362,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
 
             <WiFiDialog onOpenChange={handleWifiDialog} open={wifiOpen} />
             <LEDDialog defaultColor={selectedColor} onOpenChange={handleLEDDialog} open={ledOpen} onColorSave={handleColorSave} />
+            <UnlockDialog onOpenChange={handleUnlockDialog} open={unlockOpen} />
         </>
     )
 }
