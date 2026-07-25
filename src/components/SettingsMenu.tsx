@@ -3,8 +3,8 @@ import Dialog from "./Dialog";
 import Toggle from "./Toggle";
 import { Slider } from "./ui/slider";
 import WiFiDialog from "./WiFiDialog";
-import { ColorPicker, ColorPickerAlpha, ColorPickerEyeDropper, ColorPickerFormat, ColorPickerHue, ColorPickerOutput, ColorPickerSelection } from "./ui/color-picker";
 import LEDDialog from "./LEDDialog";
+import { Input } from "./ui/input";
 
 interface SettingsMenuProps {
     open?: boolean
@@ -47,6 +47,12 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
 
     const [wifiOpen, setIsWiFiOpen] = useState(false);
     const [ledOpen, setIsLEDOpen] = useState(false);
+    const [selectedColor, setSelectedColor] = useState<string>("#ffffff");
+
+    const handleColorSave = (color: string) => {
+        setSelectedColor(color);
+        setIsLEDOpen(false);
+    };
 
     const handleOpen = () => {
         onOpenChange()
@@ -274,39 +280,48 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
                             console.log("");
                         }} ></Toggle> */}
                             <p>Светодиодная лента</p>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
                                 <Toggle onChange={function () {
                                     console.log("");
                                 }} ></Toggle>
-                                <p>Выбранный цвет:</p>
-                                <p onClick={handleLEDDialog} className="">123123</p>
+
+                                <div
+                                    onClick={handleLEDDialog}
+                                    className={
+                                        "flex w-55 h-8 active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all justify-center gap-2 items-center rounded-lg bg-white/20 border border-white/18 shadow-sm"
+                                    }
+                                >
+                                    <p>Выбранный цвет:</p>
+                                    <div className="w-12 h-5 rounded-md" style={{ backgroundColor: selectedColor }}></div>
+                                </div>
+
                             </div>
 
                             <div className="flex items-center justify-center w-80 gap-3 rounded-xl py-6 border border-white/18 bg-white/10">
                                 <div className="flex items-center justify-center">
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-black/10 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">OK
+                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">OK
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-8">
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-black/10 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">ESC</div>
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-black/10 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">RESET</div>
+                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">ESC</div>
+                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">RESET</div>
                                 </div>
                                 <div className="flex items-center justify-center">
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-black/10 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">CONFIRM</div>
+                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-23 h-8 rounded-lg bg-white/20 border border-white/18">CONFIRM</div>
                                 </div>
                             </div>
                             <div className="flex flex-col gap-2">
-                                <div className="active:scale-[0.94] cursor-pointer hover:bg-black/10 transition-all flex items-center justify-center w-80 h-8 rounded-lg bg-white/20 border border-white/18">Разблокировать установку
+                                <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-80 h-8 rounded-lg bg-white/20 border border-white/18">Разблокировать установку
                                 </div>
                                 <div className="flex gap-4 justify-between w-80">
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-black/10 transition-all flex items-center justify-center w-full h-8 rounded-lg bg-white/20 border border-white/18">Self-test
+                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-full h-8 rounded-lg bg-white/20 border border-white/18">Self-test
                                     </div>
-                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-black/10 transition-all flex items-center justify-center w-full h-8 rounded-lg bg-white/20 border border-white/18">Dry self-test
+                                    <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-full h-8 rounded-lg bg-white/20 border border-white/18">Dry self-test
                                     </div>
                                 </div>
-                                <div onClick={handleWifiDialog} className="active:scale-[0.94] cursor-pointer hover:bg-black/10 transition-all flex items-center justify-center w-80 h-8 rounded-lg bg-white/20 border border-white/18">Настройка WiFi
+                                <div onClick={handleWifiDialog} className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-80 h-8 rounded-lg bg-white/20 border border-white/18">Настройка WiFi
                                 </div>
-                                <div className="active:scale-[0.94] cursor-pointer hover:bg-black/10 transition-all flex items-center justify-center w-80 h-8 rounded-lg bg-white/20 border border-white/18">Привязать контроллер / пульт
+                                <div className="active:scale-[0.94] cursor-pointer hover:bg-white/30 transition-all flex items-center justify-center w-80 h-8 rounded-lg bg-white/20 border border-white/18">Привязать контроллер / пульт
                                 </div>
                             </div>
                         </div>
@@ -349,7 +364,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
             </Dialog>
 
             <WiFiDialog onOpenChange={handleWifiDialog} open={wifiOpen} />
-            <LEDDialog onOpenChange={handleLEDDialog} open={ledOpen} />
+            <LEDDialog defaultColor={selectedColor} onOpenChange={handleLEDDialog} open={ledOpen} onColorSave={handleColorSave} />
         </>
     )
 }

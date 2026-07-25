@@ -30,8 +30,8 @@ function Toggle({ onChange, width = 52, height = 28, translateWidth = 22, textDi
 
     return (
         <div onClick={handleToggle}
-            style={{ minWidth: width, minHeight: height, width: width }}
-            className={`${state !== 0 ? "bg-white/70" : "bg-white/20"} cursor-pointer transition-all flex px-[2px] items-center border border-white/18 rounded-full`}>
+            style={{ minWidth: width, minHeight: height, height: height, width: width }}
+            className={`${state !== 0 ? "bg-white/70" : "bg-white/20"} cursor-pointer transition-all flex px-0.5 items-center border border-white/18 rounded-full`}>
             <div
                 style={{
                     translate: (state * translateWidth).toString() + "px"

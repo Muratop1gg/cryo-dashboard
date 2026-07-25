@@ -80,24 +80,28 @@ export const ColorPicker = ({
   // Update color when controlled value changes
   useEffect(() => {
     if (value) {
-      const color = Color.rgb(value).rgb().object()
-
-      setHue(color.r)
-      setSaturation(color.g)
-      setLightness(color.b)
-      setAlpha(color.a)
+      const color = Color(value)
+      setHue(color.hue() || 0)
+      setSaturation(color.saturationl() || 100)
+      setLightness(color.lightness() || 50)
+      setAlpha(color.alpha() * 100)
     }
   }, [value])
 
+  const onChangeRef = useRef(onChange)
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
+
   // Notify parent of changes
   useEffect(() => {
-    if (onChange) {
+    if (onChangeRef.current) {
       const color = Color.hsl(hue, saturation, lightness).alpha(alpha / 100)
       const rgba = color.rgb().array()
 
-      onChange([rgba[0], rgba[1], rgba[2], alpha / 100])
+      onChangeRef.current([rgba[0], rgba[1], rgba[2], alpha / 100])
     }
-  }, [hue, saturation, lightness, alpha, onChange])
+  }, [hue, saturation, lightness, alpha])
 
   return (
     <ColorPickerContext.Provider
@@ -126,7 +130,19 @@ export const ColorPickerSelection = memo(({ className, ...props }: ColorPickerSe
   const [isDragging, setIsDragging] = useState(false)
   const [positionX, setPositionX] = useState(0)
   const [positionY, setPositionY] = useState(0)
-  const { hue, setSaturation, setLightness } = useColorPicker()
+  const { hue, saturation, lightness, setSaturation, setLightness } = useColorPicker()
+
+  // Обновляем позицию при изменении saturation и lightness из контекста
+  useEffect(() => {
+    // Вычисляем позицию X на основе насыщенности
+    const x = saturation / 100
+    // Вычисляем позицию Y на основе яркости
+    const topLightness = x < 0.01 ? 100 : 50 + 50 * (1 - x)
+    const y = topLightness > 0 ? 1 - lightness / topLightness : 0
+
+    setPositionX(Math.max(0, Math.min(1, x)))
+    setPositionY(Math.max(0, Math.min(1, y)))
+  }, [saturation, lightness])
 
   const backgroundGradient = useMemo(() => {
     return `linear-gradient(0deg, rgba(0,0,0,1), rgba(0,0,0,0)),

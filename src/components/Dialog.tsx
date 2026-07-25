@@ -70,7 +70,7 @@ function Dialog({ onOpenChange, open = false, children, className, style, z = 20
                         onClick={handleOpenChange}
                         className="absolute active:scale-[0.94] top-0 duration-300
                             right-0 h-10 w-10 flex items-center justify-center rounded-xl
-                            transition-all bg-white/20 hover:bg-black/10 cursor-pointer text-white
+                            transition-all bg-white/20 hover:bg-white/30 cursor-pointer text-white
                             border border-white/18"
                     >
                         X
