@@ -47,8 +47,6 @@ function LEDDialog({ open = false, onOpenChange, defaultColor = "#ffffff", onCol
         setColor(presetColor)
     }
 
-
-
     return (
         <Dialog z={30} onOpenChange={handleOpen} className='p-6 h-[40vh] top-[25vh] left-[30vw] right-[30vw] text-white' open={open} >
             <p className="text-white text-2xl">Настройка цвета</p>
@@ -113,7 +111,7 @@ function LEDDialog({ open = false, onOpenChange, defaultColor = "#ffffff", onCol
                         Отменить
                     </Button>
                     <Button variant="primary" onClick={() => onColorSave(color)} >
-                        Сохранить изменения
+                        Применить
                     </Button>
                 </div>
             </div>

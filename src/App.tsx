@@ -11,7 +11,7 @@ import {
   XAxis
 } from 'recharts';
 import { useApi } from "./hooks/useApi";
-import SettingsMenu from "./components/SettingsMenu";
+import PWDDialog from "./components/PWDDialog";
 
 
 const HISTORY_LENGTH = 60;
@@ -381,7 +381,7 @@ export default function App() {
           </div>
         </div>
       </div>
-      <SettingsMenu open={isMenuOpen} onOpenChange={() => { setIsMenuOpen(!isMenuOpen) }} />
+      <PWDDialog open={isMenuOpen} onOpenChange={() => { setIsMenuOpen(!isMenuOpen) }} />
     </div >
   );
 }

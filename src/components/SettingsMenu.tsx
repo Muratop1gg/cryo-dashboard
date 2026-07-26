@@ -6,6 +6,7 @@ import WiFiDialog from "./WiFiDialog";
 import LEDDialog from "./LEDDialog";
 import Button from "./button";
 import UnlockDialog from "./UnlockDialog";
+import { Loader, Loader2 } from "lucide-react";
 
 interface SettingsMenuProps {
     open?: boolean
@@ -50,6 +51,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
     const [ledOpen, setIsLEDOpen] = useState(false);
     const [unlockOpen, setIsUnlockOpen] = useState(false);
     const [selectedColor, setSelectedColor] = useState<string>("#ffffff");
+    const [selfTestRunning, setSelfTestRunning] = useState(false);
 
     const handleColorSave = (color: string) => {
         setSelectedColor(color);
@@ -237,119 +239,161 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
                         </div>
                     </div>
                     <div>
-                        <p className="text-2xl">Управление</p>
-                        <div className="border border-white/18 my-3" />
-                        <div className="grid grid-cols-2 gap-2">
-                            <p>Двигатель нагнетателя</p>
-                            <div className="flex gap-2 items-center"
-                            >
-                                <Toggle onChange={function () {
-                                    console.log("");
-                                }} ></Toggle>
-                            </div>
-                            <p>Двигатель парогенератора</p>
-                            <div className="flex gap-2 items-center justify-center">
-                                <Toggle onChange={function () {
-                                    console.log("");
-                                }} ></Toggle>
-                                <Slider max={50} step={1} defaultValue={0} />
-                            </div>
-                            <p>Двигатель лебедки подъёмника пациента</p>
-                            <div className="flex gap-2">
-                                <Toggle onChange={function () {
-                                    console.log("");
-                                }} ></Toggle>
-                                <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={function () {
-                                    console.log("");
-                                }} ></Toggle>
-                            </div>
+                        {selfTestRunning ? (<>
+                            <p className="text-2xl">Выполняется тестирование системы</p>
+                            <div className="border border-white/18 my-3" />
+                            <div className="rounded-lg flex flex-col gap-4 p-6 h-140 w-full border border-white/18 bg-white/10">
+                                <div className="flex gap-2">
+                                    <p className="text-white/40 animate-pulse">101 - Сработал верхний концевик лебёдки трубоподъемника</p>
+                                    -
+                                    <p className="text-green-500"> Пройдено</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <p className="text-white/40 animate-pulse">102 - Сработал нижний концевик лебёдки трубоподъемника</p>
+                                    -
+                                    <p className="text-green-500"> Пройдено</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <p className="text-white/40 animate-pulse">103 - Сработал верхний концевик лебёдки подъемника пациента</p>
+                                    -
+                                    <p className="text-green-500"> Пройдено</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <p className="text-white/40 animate-pulse">104 - Сработал нижний концевик лебёдки подъемника пациента</p>
+                                    -
+                                    <p className="text-green-500"> Пройдено</p>
+                                </div>
+                                <div className="flex gap-2 items-center animate-pulse justify-center">
+                                    <Loader2 className="animate-spin text-white/40 size-10" />
+                                </div>
 
-                            <p>Двигатель трубоподъемника</p>
-                            <div className="flex gap-2">
+                            </div>
+                            <div className="flex justify-between gap-4 mt-3">
+                                <div className="border rounded-lg border-white/18 bg-white/10 px-2 gap-2 flex items-center justify-center">
+                                    Стадия:
+                                    <p className="text-white/40">проверка концевиков</p>
+                                </div>
+                                <Button variant="destructive" >
+                                    Остановить тестирование
+                                </Button>
+
+                            </div>
+                        </>) : (<>
+                            <p className="text-2xl">Управление</p>
+                            <div className="border border-white/18 my-3" />
+                            <div className="grid grid-cols-2 gap-2">
+                                <p>Двигатель нагнетателя</p>
+                                <div className="flex gap-2 items-center"
+                                >
+                                    <Toggle onChange={function () {
+                                        console.log("");
+                                    }} ></Toggle>
+                                </div>
+                                <p>Двигатель парогенератора</p>
+                                <div className="flex gap-2 items-center justify-center">
+                                    <Toggle onChange={function () {
+                                        console.log("");
+                                    }} ></Toggle>
+                                    <Slider max={50} step={1} defaultValue={0} />
+                                </div>
+                                <p>Двигатель лебедки подъёмника пациента</p>
+                                <div className="flex gap-2">
+                                    <Toggle onChange={function () {
+                                        console.log("");
+                                    }} ></Toggle>
+                                    <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={function () {
+                                        console.log("");
+                                    }} ></Toggle>
+                                </div>
+
+                                <p>Двигатель трубоподъемника</p>
+                                <div className="flex gap-2">
+                                    <Toggle onChange={function () {
+                                        console.log("");
+                                    }} ></Toggle>
+                                    <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={function () {
+                                        console.log("");
+                                    }} ></Toggle>
+                                </div>
+                                <p>ТЭН</p>
                                 <Toggle onChange={function () {
                                     console.log("");
                                 }} ></Toggle>
-                                <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={function () {
+                                <p>Вентилятор Вытяжки</p>
+                                <Toggle onChange={function () {
                                     console.log("");
                                 }} ></Toggle>
-                            </div>
-                            <p>ТЭН</p>
-                            <Toggle onChange={function () {
-                                console.log("");
-                            }} ></Toggle>
-                            <p>Вентилятор Вытяжки</p>
-                            <Toggle onChange={function () {
-                                console.log("");
-                            }} ></Toggle>
-                            {/* <p>Заслонка вытяжки</p>
+                                {/* <p>Заслонка вытяжки</p>
                         <Toggle textDisplayed texts={["закр", "откр"]} width={68} onChange={function () {
                             console.log("");
                         }} ></Toggle> */}
-                            <p>Светодиодная лента</p>
-                            <div className="flex gap-2 items-center">
-                                <Toggle onChange={function () {
-                                    console.log("");
-                                }} ></Toggle>
-                                <Button onClick={handleLEDDialog}>
-                                    <p>Выбранный цвет:</p>
-                                    <div className="w-12 h-5 rounded-md" style={{ backgroundColor: selectedColor }}></div>
-                                </Button>
+                                <p>Светодиодная лента</p>
+                                <div className="flex gap-2 items-center">
+                                    <Toggle onChange={function () {
+                                        console.log("");
+                                    }} ></Toggle>
+                                    <Button onClick={handleLEDDialog}>
+                                        <p>Выбранный цвет:</p>
+                                        <div className="w-12 h-5 rounded-md" style={{ backgroundColor: selectedColor }}></div>
+                                    </Button>
 
 
-                            </div>
+                                </div>
 
-                            <div className="flex items-center justify-center w-80 gap-3 rounded-xl py-6 border border-white/18 bg-white/10">
-                                <div className="flex items-center justify-center">
-                                    <Button className="w-22">OK</Button>
+                                <div className="flex items-center justify-center w-80 gap-3 rounded-xl py-6 border border-white/18 bg-white/10">
+                                    <div className="flex items-center justify-center">
+                                        <Button className="w-22">OK</Button>
+                                    </div>
+                                    <div className="flex flex-col gap-8">
+                                        <Button className="w-22">ESC</Button>
+                                        <Button className="w-22" >RESET</Button>
+                                    </div>
+                                    <div className="flex items-center justify-center">
+                                        <Button className="w-22">CONFIRM</Button>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col gap-8">
-                                    <Button className="w-22">ESC</Button>
-                                    <Button className="w-22" >RESET</Button>
+                                <div className="flex flex-col gap-2">
+                                    <Button onClick={handleUnlockDialog}>Разблокировать установку</Button>
+                                    <div className="flex gap-4 justify-between">
+                                        <Button className="w-full">Self Test</Button>
+                                        <Button className="w-full">Dry Self Test</Button>
+                                    </div>
+                                    <Button onClick={handleWifiDialog} className="w-full">Настройка WiFI</Button>
+                                    <Button className="w-full" disabled>Привязать контроллер / пульт</Button>
                                 </div>
-                                <div className="flex items-center justify-center">
-                                    <Button className="w-22">CONFIRM</Button>
+                            </div>
+                            <div className="border border-white/18 my-3" />
+                            <p className="text-2xl">Уставки</p>
+                            <div className="border border-white/18 my-3" />
+                            <div className="grid grid-cols-4 gap-2">
+                                <p>Работа</p>
+                                <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                    <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
+                                </div>
+                                <p>Время ожидания</p>
+                                <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                    <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
+                                </div>
+                                <p>Общая длительность процедуры</p>
+                                <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                    <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
+                                </div>
+                                <p>Уставка s1</p>
+                                <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                    <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
+                                </div>
+                                <p>Уставка s2</p>
+                                <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                    <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
                                 </div>
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <Button onClick={handleUnlockDialog}>Разблокировать установку</Button>
-                                <div className="flex gap-4 justify-between">
-                                    <Button className="w-full">Self Test</Button>
-                                    <Button className="w-full">Dry Self Test</Button>
-                                </div>
-                                <Button onClick={handleWifiDialog} className="w-full">Настройка WiFI</Button>
-                                <Button className="w-full" disabled>Привязать контроллер / пульт</Button>
-                            </div>
-                        </div>
-                        <div className="border border-white/18 my-3" />
-                        <p className="text-2xl">Уставки</p>
-                        <div className="border border-white/18 my-3" />
-                        <div className="grid grid-cols-4 gap-2">
-                            <p>Работа</p>
-                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
-                            </div>
-                            <p>Время ожидания</p>
-                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
-                            </div>
-                            <p>Общая длительность процедуры</p>
-                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
-                            </div>
-                            <p>Уставка s1</p>
-                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
-                            </div>
-                            <p>Уставка s2</p>
-                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                <input type="number" className="focus-visible:outline-none bg-transparent w-full" />
-                            </div>
-                        </div>
+                        </>)}
+
                         <div className="border border-white/18 my-3" />
                         <div className="gap-4 mt-6 flex justify-end">
-                            <Button variant="destructive" onClick={handleOpen}>
+                            {/* <Button variant="destructive" onClick={handleOpen}>
                                 Отменить
-                            </Button>
+                            </Button> */}
                             <Button variant="primary" onClick={handleOpen}>
                                 Сохранить изменения
                             </Button>
