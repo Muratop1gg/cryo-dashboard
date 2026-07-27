@@ -300,9 +300,10 @@ export async function RequestUnlock(): Promise<BasicResponse> {
 
 /**
  * Запрос на разблокировку по 
- * @param unlockCode - код разблокировки, в нем зашифровано время
+ * @param code - код разблокировки, в нем зашифровано время
  */
-export async function (code: string): Promise<POST.CheckUnlockCodeResponse> {
+
+export async function CheckUnlockCode(code: string): Promise<POST.CheckUnlockCodeResponse> {
     return apiRequest<POST.CheckUnlockCodeResponse>(`/api/unlock/check`, {
         method: 'POST',
         body: JSON.stringify({ code } as POST.CheckUnlockCode)

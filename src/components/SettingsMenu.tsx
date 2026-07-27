@@ -235,10 +235,8 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
     }
 
     const handleCancel = () => {
-
         setCurrentSettings(originalSettings);
         setSelectedColor(originalSettings.led_color);
-
     }
 
 

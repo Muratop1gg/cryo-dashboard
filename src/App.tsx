@@ -173,18 +173,18 @@ export default function App() {
 
           if (isTimerPaused) {
             console.log("Resuming via API");
-            api.resumeProcedure({});
+            api.resumeProcedure();
           } else if (isTimerRunning) {
             console.log("Pausing via API");
-            api.pauseProcedure({});
+            api.pauseProcedure();
           } else {
             console.log("Starting via API");
-            api.startProcedure({});
+            api.startProcedure();
           }
         } else if (event.key === 'Backspace') {
           event.preventDefault();
           console.log("Stopping via API");
-          api.stopProcedure({});
+          api.stopProcedure();
           setSessionTime(0);
           sessionTimeRef.current = 0;
           stopTimer();
@@ -381,7 +381,7 @@ export default function App() {
           </div>
         </div>
       </div>
-      <PWDDialog open={isMenuOpen} onOpenChange={() => { setIsMenuOpen(!isMenuOpen) }} />
+      <PWDDialog open={isMenuOpen} onOpenChange={() => { setIsMenuOpen(false) }} />
     </div >
   );
 }
