@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Event, SystemData } from "../types";
+import { WS } from "@/lib/api";
 
 
 // WebSocket URL
@@ -7,9 +7,9 @@ const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws";
 
 
 export function useWebSocket(
-  onEvent?: (event: Event) => void
+  onEvent?: (event: WS.Event) => void
 ) {
-  const [sensorData, setSensorData] = useState<SystemData | null>(null);
+  const [sensorData, setSensorData] = useState<WS.SensorsData | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const onEventRef = useRef(onEvent);
@@ -32,18 +32,18 @@ export function useWebSocket(
         ws.onmessage = (msg) => {
           try {
             const data = JSON.parse(msg.data);
-            // console.log(data)
+            // console.log(data.payload)
 
-            if (data.type === "sensor_data") {
+            if (data.event === "sensors_data") {
               // Обновляем данные сенсоров
-              setSensorData(data.data as SystemData);
+              setSensorData(data.payload as WS.SensorsData);
               // console.log("[WS] Sensor data updated:", newSensorData);
             }
-            else if (data.type === "event" && onEventRef.current) {
-              onEventRef.current(data.data as Event);
+            else if (data.event === "event" && onEventRef.current) {
+              onEventRef.current(data.payload as WS.Event);
               // console.log("[WS] Event received:", event);
             }
-            else if (data.type === "connection_established") {
+            else if (data.event === "connection_established") {
               // console.log("[WS] Connection established:", data.message);
             }
           } catch (e) {

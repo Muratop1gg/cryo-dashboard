@@ -14,7 +14,7 @@ interface WiFiDialogProps {
 
 function WiFiDialog({ open = false, onOpenChange, onWiFiSave, data }: WiFiDialogProps) {
 
-    const [wifiData, setWiFiData] = useState({ ssid: data?.ssid || '', password: '' })
+    const [wifiData, setWiFiData] = useState({ ssid: data?.ssid || '', password: '*'.repeat(data?.password_len || 0) })
 
     const handleOpen = () => {
         onOpenChange && onOpenChange()
@@ -35,7 +35,6 @@ function WiFiDialog({ open = false, onOpenChange, onWiFiSave, data }: WiFiDialog
                     <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-70">
                         <input
                             type="text"
-                            defaultValue={data?.ssid}
                             className="focus-visible:outline-none bg-transparent w-full"
                             value={wifiData.ssid}
                             onChange={(e) => setWiFiData({ ...wifiData, ssid: e.target.value })}
@@ -48,7 +47,6 @@ function WiFiDialog({ open = false, onOpenChange, onWiFiSave, data }: WiFiDialog
                     <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-70">
                         <input
                             type="password"
-                            defaultValue={data?.password_len ? '*'.repeat(data.password_len) : ''}
                             className="focus-visible:outline-none bg-transparent w-full"
                             value={wifiData.password}
                             onChange={(e) => setWiFiData({ ...wifiData, password: e.target.value })}

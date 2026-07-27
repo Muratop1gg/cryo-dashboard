@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
-import { Event, SystemMode } from "./types";
+import { SystemMode } from "./types";
 // import { ToastManager } from "./components/ToastManager";
 
 import {
@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { useApi } from "./hooks/useApi";
 import PWDDialog from "./components/PWDDialog";
+import { WS } from "./lib/api";
 
 
 const HISTORY_LENGTH = 60;
@@ -60,11 +61,11 @@ export default function App() {
     );
   }, []);
 
-  const handleEvent = useCallback((event: Event) => {
-    console.log("Event received:", event.EventType);
+  const handleEvent = useCallback((event: WS.Event) => {
+    console.log("Event received:", event.event_id);
 
 
-    switch (event.EventType) {
+    switch (event.event_id) {
 
       case 100:
         // Старт процедуры
@@ -207,7 +208,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!sensorData?.Telemetry?.Temperature?.Average) return;
+    if (!sensorData?.sensor_data.t1) return;
 
     if (!isChartActive) return;
 
@@ -215,7 +216,7 @@ export default function App() {
 
     if (updateCounterRef.current % 5 !== 0) return;
 
-    const newTemperature = sensorData.Telemetry.Temperature.Average;
+    const newTemperature = sensorData.sensor_data.t1;
 
     setTemperatureHistory(prev => {
       const newHistory = [...prev];
@@ -271,7 +272,7 @@ export default function App() {
           </GlassCard>
 
           <GlassCard style={{ minWidth: 200, display: "flex", alignItems: "center", gap: 14 }}>
-            {sensorData && <StatusPulse status={sensorData.SystemStatus.currentMode} />}
+            {sensorData && <StatusPulse status={sensorData.stats.pipe_hoist} />}
             <div>
               <Label>СТАТУС</Label>
               <div className="font-bold tracking-wider leading-tight text-4xl text-white opacity-92" >
@@ -339,7 +340,7 @@ export default function App() {
                 </div>
                 <div>
                   <Label>ТЕМПЕРАТУРА</Label>
-                  {sensorData && <BigValue value={sensorData?.Telemetry.Temperature.Average} unit="°C" trend={"1"} />}
+                  {sensorData && <BigValue value={sensorData.sensor_data.t1} unit="°C" trend={"1"} />}
                 </div>
               </div>
             </GlassCard>
@@ -367,14 +368,14 @@ export default function App() {
             <GlassCard className="flex-1 max-w-lg h-[10vh] flex items-center justify-center gap-5">
               <div className="flex gap-2">
                 <Label>O2 - </Label>
-                {sensorData && <MidValue value={sensorData.Telemetry.Environment.ChamberOxygen} />}
+                {sensorData && <MidValue value={sensorData.sensor_data.oxygen} />}
                 <Label>%</Label>
               </div>
             </GlassCard>
             <GlassCard className="flex-1 max-w-lg h-[10vh] flex items-center justify-center gap-5">
               <div className="flex gap-2">
                 <Label>Rh - </Label>
-                {sensorData && <MidValue value={sensorData.Telemetry.Environment.ChamberHumidity} />}
+                {sensorData && <MidValue value={sensorData.sensor_data.humidity} />}
                 <Label>%</Label>
               </div>
             </GlassCard>
@@ -445,7 +446,7 @@ function MidValue({ value, unit, trend }: { value: number; unit?: string; trend?
         {value}
       </span>
       {unit && (
-        <span className="text-[clamp(0.9rem,1.3vw,1.2rem)] text-white/40 mb-[3px]">
+        <span className="text-[clamp(0.9rem,1.3vw,1.2rem)] text-white/40 mb-0.75">
           {unit}
         </span>
       )}
@@ -477,7 +478,7 @@ function SessionTimer({ time, isRunning, isPaused }: { time: number; isRunning: 
   );
 }
 
-function StatusPulse({ status }: { status: SystemMode }) {
+function StatusPulse({ status }: { status: any }) {
   const color = () => {
     switch (status) {
       case "working":
@@ -492,7 +493,7 @@ function StatusPulse({ status }: { status: SystemMode }) {
   }
 
   return (
-    <div className="relative w-3 h-3 flex-shrink-0">
+    <div className="relative w-3 h-3 shrink-0">
       <div
         className="absolute inset-0 rounded-full"
         style={{
