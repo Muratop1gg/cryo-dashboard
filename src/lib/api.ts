@@ -32,239 +32,132 @@ async function apiRequest<T>(
     return response.json();
 }
 
-// ========== ТИПЫ (МОДЕЛИ) ==========
-
-export type SystemMode = 'stdby' | 'autotest' | 'drying' | 'cooling' | 'working';
-
-// --- Телеметрия ---
-export interface SystemStatusModel {
-    currentMode: SystemMode;
-    errorCode: string[] | null;
-    SteamOnline: boolean;
-    HoistOnline: boolean;
+export interface BasicResponse {
+    status_code: string
+    message?: string
 }
 
-export interface VFDModel {
-    Frequency: number;
-    ErrorCode: string;
+export namespace GET {
+    export interface SystemConfiguration {
+        object: any
+        // whatever is happening here 
+    }
+
+    export interface SettingsData {
+        led_color: string
+        blocked: "yes" | "no" | "unlocking"
+        time_s1_sec: number // работа 
+        time_s2_sec: number // ожидание
+        time_s3_sec: number // общая длительность процедуры
+        temperature_sp1: number // уставка s1
+        temperature_sp2: number // уставка s2
+        wifi?: {
+            ssid: string
+            password_len: number
+        }
+    }
 }
 
-export interface VFDStatusesModel {
-    Steam: VFDModel;
-    Hoist: VFDModel;
+export namespace POST {
+    export interface ChangeProcedureState {
+        action: "stop" | "pause" | "resume" | "start"
+    }
+
+    export interface StartSelfTest {
+        type: "dry" | "default"
+    }
+
+    export interface SettingsData {
+        led_color?: string
+        time_s1_sec?: number // работа 
+        time_s2_sec?: number // ожидание
+        time_s3_sec?: number // общая длительность процедуры
+        temperature_sp1?: number // уставка s1
+        temperature_sp2?: number // уставка s2
+        wifi?: {
+            ssid: string
+            password_len: number
+        }
+    }
+
+    export interface SystemConfiguration {
+        // whatever is happening here 
+    }
+
+    export interface CheckUnlockCode {
+        code: string // this is generated code for unblock, we have time info in it as well
+    }
+
+    export interface CheckUnlockCodeResponse {
+        accepted: boolean
+        days_left: number
+    }
 }
 
-export interface TemperatureModel {
-    SteamGenerator: number;
-    HeaterZone: number;
-    AirDuct: number;
-    Average: number;
-    ChamberZone: number;
-}
+export namespace WS {
+    export interface SensorsData {
+        digital_inputs: {
+            pipe_hoist: {
+                lsw_top_emergency: boolean
+                lsw_top_working: boolean
+                lsw_bottom_working: boolean
+                lsw_bottom_emergency: boolean
+            }
+            patient_hoist: {
+                lsw_top_emergency: boolean
+                lsw_top_working: boolean
+                lsw_bottom_working: boolean
+                lsw_bottom_emergency: boolean
+                patient_present: boolean
+            }
+            safety: {
+                estop_pressed: boolean
+                cabinet_door_open: boolean
+            }
+        }
+        stats: {
+            patient_hoist: 0 | 1 | 2 | 3   // 0 - стоп	1 - движение вверх 2 - движение вниз 3 - авария
+            pipe_hoist: 0 | 1 | 2 | 3    // 0 - стоп	1 - движение вверх 2 - движение вниз 3 - авария
+            steam: 0 | 1 | 2 | 3          // 0 - стоп 1 - включение 2 - работа 3 - остановка 4 - авария
+            charger: 0 | 1 | 2 | 3         // 0 - стоп 1 - работа 2 - авария
+            heater: 0 | 1 | 2 | 3,          // 0 - стоп 1 - работа 2 - авария
+            exhaust: 0 | 1 | 2 | 3         // 0 - стоп 1 - включение 2 - работа 3 - остановка 4 - авария
+        }
+        sensor_data: {
+            t1: number
+            t2: number
+            t3: number
+            t4: number
+            humidity: number
+            oxygen: number
+            nitrogen_mass?: number
+        }
+        diagnostics: {
+            test: {
+                running: boolean
+                type?: "self_test" | "dry_self_test"
+                stage?: string
+            }
+        }
 
-export interface EnvironmentModel {
-    AirDuctHumidity: number;
-    ChamberHumidity: number;
-    ChamberOxygen: number;
-    NitrogenLevel: number;
-}
+    }
 
-export interface TelemetryModel {
-    Temperature: TemperatureModel;
-    Environment: EnvironmentModel;
-    vfdStatus: VFDStatusesModel;
-}
+    export interface Event {
+        event_id: number // for digits code
+    }
 
-export interface SensorData {
-    SystemStatus: SystemStatusModel;
-    Telemetry: TelemetryModel;
-}
+    export interface ControllerButtonPressed {
+        button: "OK" | "ESC" | "RESET" | "CONFIRM"
+    }
 
-// --- Концевики и безопасность ---
-export interface Hoist {
-    lsw_top_emergency: boolean;
-    lsw_top_working: boolean;
-    lsw_bottom_working: boolean;
-    lsw_bottom_emergency: boolean;
-}
+    export interface MachineControl {
+        type: string
+        value: boolean
+    }
 
-export interface PatientHoist extends Hoist {
-    patient_present: boolean;
-}
-
-export interface SafetyModel {
-    estop_pressed: boolean;
-    cabinet_door_open: boolean;
-}
-
-export interface DigitalInputs {
-    pipe_hoist: Hoist;
-    patient_hoist: PatientHoist;
-    safety: SafetyModel;
-}
-
-export interface StatsModel {
-    patient_hoist: number; // 0-стоп, 1-вверх, 2-вниз, 3-авария
-    pipe_hoist: number;    // 0-стоп, 1-вверх, 2-вниз, 3-авария
-    steam: number;         // 0-стоп, 1-вкл, 2-работа, 3-остановка, 4-авария
-    charger: number;       // 0-стоп, 1-работа, 2-авария
-    heater: number;        // 0-стоп, 1-работа, 2-авария
-    exhaust: number;       // 0-стоп, 1-вкл, 2-работа, 3-остановка, 4-авария
-}
-
-// --- Системная информация ---
-export interface SystemInfo {
-    hostname: string;
-    os: string;
-    python_version: string;
-    app_version: string;
-    uptime_seconds: number;
-    started_at: string;
-    modbus_connected: boolean;
-    zigbee_connected: boolean;
-    o2_sensor_connected: boolean;
-    SystemStatus: SystemStatusModel;
-    Telemetry: TelemetryModel;
-    digital_inputs: DigitalInputs;
-    stats: StatsModel;
-}
-
-// --- Конфигурация ---
-export interface ConfigResponse {
-    network: Record<string, any>;
-    hardware: Record<string, any>;
-    defaults: Record<string, any>;
-    modbus_plc: Record<string, any>;
-    zigbee_modem: Record<string, any>;
-}
-
-// --- Статус актуаторов ---
-export interface ActuatorStatus {
-    // Определите поля на основе модели ActuatorStatus
-    [key: string]: any;
-}
-
-// --- Лог ---
-export interface LogResponse {
-    content: string;
-    lines_count: number;
-    last_modified: string | null;
-}
-
-// --- Команды ---
-export interface ModeSelection {
-    mode: SystemMode;
-}
-
-export interface TechnologicalSettingsModel {
-    time_s1_sec: number;
-    time_s2_sec: number;
-    time_s3_sec: number;
-    temperature_sp1: number;
-    temperature_sp2: number;
-}
-
-export interface UpdateSettings {
-    mode_selection: ModeSelection;
-    technological_settings: TechnologicalSettingsModel;
-}
-
-export interface MotionCommands {
-    patient_hoist?: boolean | null; // true=вверх, false=вниз, null=стоп
-    pipe_hoist?: boolean | null;    // true=вверх, false=вниз, null=стоп
-}
-
-export interface UiButtons {
-    btn_ok: boolean;
-    btn_esc: boolean;
-    btn_reset_fault: boolean;
-    btn_bypass_confirm: boolean;
-}
-
-export interface Security {
-    system_code_long: string;
-}
-
-export interface AutocalibrationCommand {
-    start: boolean;
-}
-
-// --- Команды процедуры ---
-export interface StartProcedure {
-    // Можно добавить параметры если нужны
-    [key: string]: any;
-}
-
-export interface PauseProcedure {
-    // Можно добавить параметры если нужны
-    [key: string]: any;
-}
-
-export interface ResumeProcedure {
-    // Можно добавить параметры если нужны
-    [key: string]: any;
-}
-
-export interface StopProcedure {
-    // Можно добавить параметры если нужны
-    [key: string]: any;
-}
-
-// --- Исполнительные устройства ---
-export interface BlowerCommand {
-    enabled: boolean;
-    frequency_hz: number;
-}
-
-export interface SteamGeneratorCommand {
-    enabled: boolean;
-    frequency_hz: number;
-    direction: 'forward' | 'reverse';
-}
-
-export interface HoistCommand {
-    state: 'stop' | 'up' | 'down';
-}
-
-export interface HeaterCommand {
-    enabled: boolean;
-    power_w: number;
-}
-
-export interface ExhaustFanCommand {
-    enabled: boolean;
-}
-
-export interface ExhaustDamperCommand {
-    state: 'open' | 'closed';
-}
-
-export interface LedStripCommand {
-    enabled: boolean;
-    color: string;
-    type: 'argb' | 'rgb';
-}
-
-export interface ActuatorCommand {
-    device: 'blower' | 'steam_generator' | 'patient_hoist' | 'pipe_hoist' |
-    'heater' | 'exhaust_fan' | 'exhaust_damper' | 'led_strip';
-    payload: BlowerCommand | SteamGeneratorCommand | HoistCommand |
-    HeaterCommand | ExhaustFanCommand | ExhaustDamperCommand |
-    LedStripCommand;
-}
-
-// --- Ответы ---
-export interface CommandResponse {
-    status: 'success' | 'error' | 'timeout';
-    message: string;
-    event_id?: number | null;
-    data?: Record<string, any> | null;
-}
-
-export interface UnlockResponse {
-    status: 'success' | 'error';
-    message: string;
-    SubscriptionEndDate: string;
+    export interface SteamSpeedControl {
+        value: number // between 0 and 50
+    }
 }
 
 // ========== API ФУНКЦИИ ==========
@@ -274,170 +167,144 @@ export interface UnlockResponse {
 /**
  * Получение системной конфигурации
  */
-export async function getConfig(): Promise<ConfigResponse> {
-    return apiRequest<ConfigResponse>('/api/config');
+export async function getConfig(): Promise<GET.SystemConfiguration> {
+    return apiRequest<GET.SystemConfiguration>('/api/config');
 }
 
 /**
- * Получение системной информации + телеметрии + концевиков + статистики
+ * Получение системных параметров
  */
-export async function getSystemInfo(): Promise<SystemInfo> {
-    return apiRequest<SystemInfo>('/api/system_info');
-}
-
-/**
- * Получение статусов исполнительных устройств
- */
-export async function getActuatorsStatus(): Promise<ActuatorStatus> {
-    return apiRequest<ActuatorStatus>('/api/actuators/status');
-}
-
-/**
- * Получение лога последней процедуры
- * @param lines количество строк (по умолчанию 100, от 1 до 1000)
- */
-export async function getLog(lines: number = 100): Promise<LogResponse> {
-    return apiRequest<LogResponse>(`/api/log?lines=${lines}`);
+export async function getSettings(): Promise<GET.SettingsData> {
+    return apiRequest<GET.SettingsData>(`/api/settings`);
 }
 
 // --- POST запросы ---
 
-/**
- * Обновление настроек процедуры
- */
-export async function updateSettings(settings: UpdateSettings): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/settings', {
-        method: 'POST',
-        body: JSON.stringify(settings),
-    });
-}
-
-/**
- * Команды движения лебёдкам
- */
-export async function motionCommand(cmd: MotionCommands): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/motion', {
-        method: 'POST',
-        body: JSON.stringify(cmd),
-    });
-}
-
-/**
- * Команды кнопок UI
- */
-export async function uiButtons(cmd: UiButtons): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/ui_buttons', {
-        method: 'POST',
-        body: JSON.stringify(cmd),
-    });
-}
-
-/**
- * Разблокировка системы (без интернета)
- */
-export async function securityUnlock(cmd: Security): Promise<UnlockResponse> {
-    return apiRequest<UnlockResponse>('/api/security', {
-        method: 'POST',
-        body: JSON.stringify(cmd),
-    });
-}
-
-/**
- * Запуск автокалибровки
- */
-export async function autocalibration(cmd: AutocalibrationCommand): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/autocalibration', {
-        method: 'POST',
-        body: JSON.stringify(cmd),
-    });
-}
-
-/**
- * Универсальная команда для исполнительных устройств
- */
-export async function actuatorCommand(cmd: ActuatorCommand): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/actuators/command', {
-        method: 'POST',
-        body: JSON.stringify(cmd),
-    });
-}
-
-// ========== КОМАНДЫ ПРОЦЕДУРЫ ==========
+// --- Управление процедурой ---
 
 /**
  * Запуск процедуры
- * @param cmd параметры запуска процедуры (если нужны)
  */
-export async function startProcedure(cmd: StartProcedure = {}): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/procedure/start', {
+export async function StartProcedure(): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/change-procedure-state`, {
         method: 'POST',
-        body: JSON.stringify(cmd),
+        body: JSON.stringify({
+            action: "start"
+        } as POST.ChangeProcedureState)
     });
 }
 
 /**
  * Пауза процедуры
- * @param cmd параметры паузы (если нужны)
  */
-export async function pauseProcedure(cmd: PauseProcedure = {}): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/procedure/pause', {
+export async function PauseProcedure(): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/change-procedure-state`, {
         method: 'POST',
-        body: JSON.stringify(cmd),
-    });
-}
-
-/**
- * Возобновление процедуры после паузы
- * @param cmd параметры возобновления (если нужны)
- */
-export async function resumeProcedure(cmd: ResumeProcedure = {}): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/procedure/resume', {
-        method: 'POST',
-        body: JSON.stringify(cmd),
+        body: JSON.stringify({
+            action: "pause"
+        } as POST.ChangeProcedureState)
     });
 }
 
 /**
  * Остановка процедуры
- * @param cmd параметры остановки (если нужны)
  */
-export async function stopProcedure(cmd: StopProcedure = {}): Promise<CommandResponse> {
-    return apiRequest<CommandResponse>('/api/procedure/stop', {
+export async function StopProcedure(): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/change-procedure-state`, {
         method: 'POST',
-        body: JSON.stringify(cmd),
+        body: JSON.stringify({
+            action: "stop"
+        } as POST.ChangeProcedureState)
     });
 }
 
-// ========== УТИЛИТЫ ДЛЯ УДОБСТВА ==========
-
 /**
- * Команды для лебёдки пациента
+ * Возобновление процедуры
  */
-export const PatientHoistCommands = {
-    UP: { patient_hoist: true, pipe_hoist: null },
-    DOWN: { patient_hoist: false, pipe_hoist: null },
-    STOP: { patient_hoist: null, pipe_hoist: null },
-} as const;
-
-/**
- * Команды для лебёдки трубы
- */
-export const PipeHoistCommands = {
-    UP: { patient_hoist: null, pipe_hoist: true },
-    DOWN: { patient_hoist: null, pipe_hoist: false },
-    STOP: { patient_hoist: null, pipe_hoist: null },
-} as const;
-
-/**
- * Вспомогательная функция для создания команд актуаторов
- */
-export function createActuatorCommand<T extends ActuatorCommand['payload']>(
-    device: ActuatorCommand['device'],
-    payload: T
-): ActuatorCommand {
-    return { device, payload };
+export async function ResumeProcedure(): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/change-procedure-state`, {
+        method: 'POST',
+        body: JSON.stringify({
+            action: "resume"
+        } as POST.ChangeProcedureState)
+    });
 }
 
-// Пример использования:
-// const blowerCmd = createActuatorCommand('blower', { enabled: true, frequency_hz: 30 });
-// await actuatorCommand(blowerCmd);
+// --- Управление тестами ---
+
+/**
+ * Запуск обычного теста
+ */
+export async function StartSelfTest(): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/self-test`, {
+        method: 'POST',
+        body: JSON.stringify({
+            type: "default"
+        } as POST.StartSelfTest)
+    });
+}
+
+/**
+ * Запуск сухого теста
+ */
+export async function StartSelfTestDry(): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/self-test`, {
+        method: 'POST',
+        body: JSON.stringify({
+            type: "dry"
+        } as POST.StartSelfTest)
+    });
+}
+
+/**
+ * Остановка теста
+ */
+export async function StopSelfTest(): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/self-test/stop`, {
+        method: 'POST'
+    });
+}
+
+// --- Управление настройками ---
+
+/**
+ * Сохранение настроек
+ * @param updatedSettings - объект с измененными настройками
+ */
+export async function UpdateSettings(updatedSettings: POST.SettingsData): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/update-settings`, {
+        method: 'POST',
+        body: JSON.stringify(updatedSettings as POST.SettingsData)
+    });
+}
+
+/**
+ * Обновление системной конфигурации
+ * @param updatedConfig - объект с измененной конфигурацией
+ */
+export async function UpdateConfiguration(updatedConfig: POST.SystemConfiguration): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/config`, {
+        method: 'POST',
+        body: JSON.stringify(updatedConfig as POST.SystemConfiguration)
+    });
+}
+
+/**
+ * Запрос на автоматическую разблокировку
+ */
+export async function RequestUnlock(): Promise<BasicResponse> {
+    return apiRequest<BasicResponse>(`/api/unlock`, {
+        method: 'POST'
+    });
+}
+
+/**
+ * Запрос на разблокировку по 
+ * @param unlockCode - код разблокировки, в нем зашифровано время
+ */
+export async function (code: string): Promise<POST.CheckUnlockCodeResponse> {
+    return apiRequest<POST.CheckUnlockCodeResponse>(`/api/unlock/check`, {
+        method: 'POST',
+        body: JSON.stringify({ code } as POST.CheckUnlockCode)
+    });
+}
