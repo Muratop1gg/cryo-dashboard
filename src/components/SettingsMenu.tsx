@@ -9,92 +9,22 @@ import UnlockDialog from "./UnlockDialog";
 import { Loader2 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import * as api from "../lib/api";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 interface SettingsMenuProps {
     open?: boolean
     onOpenChange(): void
 }
 
-interface AdminInfo {
-    digital_inputs: {
-        pipe_hoist: {
-            lsw_top_emergency: boolean
-            lsw_top_working: boolean
-            lsw_bottom_working: boolean
-            lsw_bottom_emergency: boolean
-        },
-        patient_hoist: {
-            lsw_top_emergency: boolean
-            lsw_top_working: boolean
-            lsw_bottom_working: boolean
-            lsw_bottom_emergency: boolean
-            patient_present: boolean
-        },
-        safety: {
-            estop_pressed: boolean
-            cabinet_door_open: boolean
-        }
-    }
-    stats: {
-        patient_hoist: 0 | 1 | 2 | 3
-        pipe_hoist: 0 | 1 | 2 | 3
-        steam: 0 | 1 | 2 | 3
-        charger: 0 | 1 | 2 | 3
-        heater: 0 | 1 | 2 | 3
-        exhaust: 0 | 1 | 2 | 3
-    }
-    sensor_data: {
-        t1: number
-        t2: number
-        t3: number
-        t4: number
-        humidity: number
-        oxygen: number
-        nitrogen_mass?: number
-    },
-    diagnostics: {
-        test: {
-            running: boolean
-            type?: "self_test" | "dry_self_test"
-            stage?: string
-        }
-    }
-}
-
-interface SettingsData {
-    led_color: string
-    blocked: "yes" | "no" | "unlocking"
-    time_s1_sec: number
-    time_s2_sec: number
-    time_s3_sec: number
-    temperature_sp1: number
-    temperature_sp2: number
-    wifi?: {
-        ssid: string
-        password_len: number
-    }
-}
-
-type ChangedSettings = Partial<{
-    led_color: string
-    time_s1_sec: number
-    time_s2_sec: number
-    time_s3_sec: number
-    temperature_sp1: number
-    temperature_sp2: number
-    wifi: {
-        ssid: string
-        password: string
-    }
-}>
 
 function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
     const api = useApi();
 
     // Состояния для данных
-    const [adminInfo, setAdminInfo] = useState<AdminInfo | null>(null);
-    const [currentSettings, setCurrentSettings] = useState<SettingsData | null>(null);
-    const [originalSettings, setOriginalSettings] = useState<SettingsData | null>(null);
+    const [adminInfo, setAdminInfo] = useState<api.WS.SensorsData | null>(null);
+    const [currentSettings, setCurrentSettings] = useState<api.GET.SettingsData | null>(null);
+    const [originalSettings, setOriginalSettings] = useState<api.GET.SettingsData | null>(null);
     const [selectedColor, setSelectedColor] = useState<string>("#121212");
     const [selfTestRunning, setSelfTestRunning] = useState(false);
     const [testStage, setTestStage] = useState<string | undefined>(undefined);
@@ -108,6 +38,12 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const { sensorData } = useWebSocket();
+
+    useEffect(() => {
+        setAdminInfo(sensorData)
+    }, [sensorData])
 
     // Загрузка данных при открытии
     useEffect(() => {
@@ -123,8 +59,9 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
             // Загружаем настройки
             const settings = await api.getSettings();
             if (settings) {
-                const formattedSettings: SettingsData = {
+                const formattedSettings: api.GET.SettingsData = {
                     led_color: settings.led_color || "#121212",
+                    led_active: settings.led_active || false,
                     blocked: settings.blocked || "no",
                     time_s1_sec: settings.time_s1_sec || 0,
                     time_s2_sec: settings.time_s2_sec || 0,
@@ -138,50 +75,6 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
                 setSelectedColor(formattedSettings.led_color);
             }
 
-            // TODO: Загрузить adminInfo через WebSocket или отдельный API
-            // Пока оставляем мок для демонстрации
-            setAdminInfo({
-                digital_inputs: {
-                    pipe_hoist: {
-                        lsw_top_emergency: false,
-                        lsw_top_working: false,
-                        lsw_bottom_working: false,
-                        lsw_bottom_emergency: false
-                    },
-                    patient_hoist: {
-                        lsw_top_emergency: false,
-                        lsw_top_working: false,
-                        lsw_bottom_working: false,
-                        lsw_bottom_emergency: false,
-                        patient_present: false
-                    },
-                    safety: {
-                        estop_pressed: false,
-                        cabinet_door_open: false
-                    }
-                },
-                stats: {
-                    patient_hoist: 0,
-                    pipe_hoist: 0,
-                    steam: 0,
-                    charger: 0,
-                    heater: 0,
-                    exhaust: 0
-                },
-                sensor_data: {
-                    t1: 0,
-                    t2: 0,
-                    t3: 0,
-                    t4: 0,
-                    humidity: 0,
-                    oxygen: 0
-                },
-                diagnostics: {
-                    test: {
-                        running: false
-                    }
-                }
-            });
 
             setSelfTestRunning(false);
             setTestStage(undefined);
@@ -193,13 +86,17 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
         }
     };
 
-    const getChangedSettings = (): ChangedSettings => {
+    const getChangedSettings = (): api.POST.SettingsData => {
         if (!currentSettings || !originalSettings) return {};
 
-        const changes: ChangedSettings = {};
+        const changes: api.POST.SettingsData = {};
 
         if (currentSettings.led_color !== originalSettings.led_color) {
             changes.led_color = currentSettings.led_color;
+        }
+
+        if (currentSettings.led_active !== originalSettings.led_active) {
+            changes.led_active = currentSettings.led_active;
         }
 
         if (currentSettings.time_s1_sec !== originalSettings.time_s1_sec) {
@@ -228,7 +125,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
         ) {
             changes.wifi = {
                 ssid: currentSettings.wifi?.ssid ?? "",
-                password: ""
+                password: currentSettings.wifi?.password ?? ""
             };
         }
 
@@ -291,6 +188,11 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
             if (changes.led_color !== undefined) {
                 settingsToSave.led_color = changes.led_color;
             }
+
+            if (changes.led_active !== undefined) {
+                settingsToSave.led_active = changes.led_active;
+            }
+
             if (changes.time_s1_sec !== undefined) {
                 settingsToSave.time_s1_sec = changes.time_s1_sec;
             }
@@ -309,7 +211,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
             if (changes.wifi !== undefined) {
                 settingsToSave.wifi = {
                     ssid: changes.wifi.ssid,
-                    password_len: changes.wifi.password.length
+                    password: changes.wifi.password
                 };
             }
 
@@ -317,7 +219,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
 
             if (result) {
                 setOriginalSettings({ ...currentSettings });
-                onOpenChange();
+                // onOpenChange();
             } else {
                 setError('Ошибка при сохранении настроек');
             }
@@ -334,7 +236,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
             ...prev,
             wifi: {
                 ssid: wifiData.ssid,
-                password_len: wifiData.password.length
+                password: wifiData.password,
             }
         } : null);
     };
@@ -382,7 +284,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
         }
     };
 
-    const isChanged = (key: keyof SettingsData) => {
+    const isChanged = (key: keyof api.POST.SettingsData) => {
         return key in changedSettings;
     };
 
@@ -647,178 +549,204 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
                             </>
                         ) : (
                             <>
-                                <p className="text-2xl font-bold">Управление</p>
-                                <div className="border border-white/18 my-3" />
-                                <div className="grid grid-cols-2 gap-2">
-                                    <p>Двигатель нагнетателя</p>
-                                    <div className="flex gap-2 items-center">
-                                        <Toggle onChange={() => console.log("Toggle")} />
-                                    </div>
-                                    <p>Двигатель парогенератора</p>
-                                    <div className="flex gap-2 items-center justify-center">
-                                        <Toggle onChange={() => console.log("Toggle")} />
-                                        <Slider max={50} step={1} defaultValue={0} />
-                                    </div>
-                                    <p>Двигатель лебедки подъёмника пациента</p>
-                                    <div className="flex gap-2">
-                                        <Toggle onChange={() => console.log("Toggle")} />
-                                        <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={() => console.log("Toggle")} />
-                                    </div>
-                                    <p>Двигатель трубоподъемника</p>
-                                    <div className="flex gap-2">
-                                        <Toggle onChange={() => console.log("Toggle")} />
-                                        <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={() => console.log("Toggle")} />
-                                    </div>
-                                    <p>ТЭН</p>
-                                    <Toggle onChange={() => console.log("Toggle")} />
-                                    <p>Вентилятор Вытяжки</p>
-                                    <Toggle onChange={() => console.log("Toggle")} />
-                                    <p>Светодиодная лента</p>
-                                    <div className="flex gap-2 items-center">
-                                        <Toggle onChange={() => console.log("Toggle")} />
-                                        <Button onClick={handleLEDDialog}>
-                                            <p>Выбранный цвет:</p>
-                                            {isChanged("led_color") &&
-                                                <span className="ml-2 text-yellow-400">●</span>
-                                            }
-                                            <div className="w-12 h-5 rounded-md" style={{ backgroundColor: selectedColor }}></div>
-                                        </Button>
-                                    </div>
-                                    <div className="flex items-center justify-center w-80 gap-3 rounded-xl py-6 border border-white/18 bg-white/10">
-                                        <div className="flex items-center justify-center">
-                                            <Button className="w-22">OK</Button>
+                                <Tabs defaultValue="settings">
+                                    <TabsList className="bg-white/20 border border-white/18 m-0">
+                                        <TabsTrigger className="data-active:bg-white/70 bg-transparent data-active:text-black text-white hover:text-white cursor-pointer hover:bg-white/10" value="settings"><p className="text-xl font-bold">Уставки</p></TabsTrigger>
+                                        <TabsTrigger className="data-active:bg-white/70 bg-transparent data-active:text-black text-white  hover:text-white cursor-pointer hover:bg-white/10" value="controls"> <p className="text-xl font-bold">Управление</p></TabsTrigger>
+
+                                    </TabsList>
+                                    <TabsContent className="mt-0" value="controls">
+                                        <div className="border border-white/18 mb-3" />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <p>Двигатель нагнетателя</p>
+                                            <div className="flex gap-2 items-center">
+                                                <Toggle onChange={() => console.log("Toggle")} />
+                                            </div>
+                                            <p>Двигатель парогенератора</p>
+                                            <div className="flex gap-2 items-center justify-center">
+                                                <Toggle onChange={() => console.log("Toggle")} />
+                                                <Slider max={50} step={1} defaultValue={0} />
+                                            </div>
+                                            <p>Двигатель лебедки подъёмника пациента</p>
+                                            <div className="flex gap-2">
+                                                <Toggle onChange={() => console.log("Toggle")} />
+                                                <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={() => console.log("Toggle")} />
+                                            </div>
+                                            <p>Двигатель трубоподъемника</p>
+                                            <div className="flex gap-2">
+                                                <Toggle onChange={() => console.log("Toggle")} />
+                                                <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={() => console.log("Toggle")} />
+                                            </div>
+                                            <p>ТЭН</p>
+                                            <Toggle onChange={() => console.log("Toggle")} />
+                                            <p>Вентилятор Вытяжки</p>
+                                            <Toggle onChange={() => console.log("Toggle")} />
+                                            <div className="flex items-center justify-center w-80 gap-3 rounded-xl py-6 border border-white/18 bg-white/10">
+                                                <div className="flex items-center justify-center">
+                                                    <Button className="w-22">OK</Button>
+                                                </div>
+                                                <div className="flex flex-col gap-8">
+                                                    <Button className="w-22">ESC</Button>
+                                                    <Button className="w-22">RESET</Button>
+                                                </div>
+                                                <div className="flex items-center justify-center">
+                                                    <Button className="w-22">CONFIRM</Button>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <Button onClick={handleUnlockDialog}>Разблокировать установку</Button>
+                                                <div className="flex gap-4 justify-between">
+                                                    <Button
+                                                        className="w-full"
+                                                        onClick={() => handleSelfTest("self_test")}
+                                                        disabled={loading}
+                                                    >
+                                                        {loading ? <Loader2 className="animate-spin size-4" /> : "Self Test"}
+                                                    </Button>
+                                                    <Button
+                                                        className="w-full"
+                                                        onClick={() => handleSelfTest("dry_self_test")}
+                                                        disabled={loading}
+                                                    >
+                                                        {loading ? <Loader2 className="animate-spin size-4" /> : "Dry Self Test"}
+                                                    </Button>
+                                                </div>
+
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col gap-8">
-                                            <Button className="w-22">ESC</Button>
-                                            <Button className="w-22">RESET</Button>
+                                        <div className="border border-white/18 my-3" />
+                                    </TabsContent>
+                                    <TabsContent value="settings">
+                                        <div className="border border-white/18 mb-3" />
+                                        <div className="grid grid-cols-4 gap-2">
+                                            <p>Работа</p>
+                                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                                <input
+                                                    value={currentSettings.time_s1_sec}
+                                                    onChange={(e) =>
+                                                        setCurrentSettings(prev => prev ? {
+                                                            ...prev,
+                                                            time_s1_sec: Number(e.target.value)
+                                                        } : null)
+                                                    }
+                                                    type="number"
+                                                    className="focus-visible:outline-none bg-transparent w-full"
+                                                />
+                                            </div>
+                                            <p>Время ожидания</p>
+                                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                                <input
+                                                    value={currentSettings.time_s2_sec}
+                                                    onChange={(e) =>
+                                                        setCurrentSettings(prev => prev ? {
+                                                            ...prev,
+                                                            time_s2_sec: Number(e.target.value)
+                                                        } : null)
+                                                    }
+                                                    type="number"
+                                                    className="focus-visible:outline-none bg-transparent w-full"
+                                                />
+                                            </div>
+                                            <p>Общая длительность процедуры</p>
+                                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                                <input
+                                                    value={currentSettings.time_s3_sec}
+                                                    onChange={(e) =>
+                                                        setCurrentSettings(prev => prev ? {
+                                                            ...prev,
+                                                            time_s3_sec: Number(e.target.value)
+                                                        } : null)
+                                                    }
+                                                    type="number"
+                                                    className="focus-visible:outline-none bg-transparent w-full"
+                                                />
+                                            </div>
+                                            <p>Уставка s1</p>
+                                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                                <input
+                                                    value={currentSettings.temperature_sp1}
+                                                    onChange={(e) =>
+                                                        setCurrentSettings(prev => prev ? {
+                                                            ...prev,
+                                                            temperature_sp1: Number(e.target.value)
+                                                        } : null)
+                                                    }
+                                                    type="number"
+                                                    className="focus-visible:outline-none bg-transparent w-full"
+                                                />
+                                            </div>
+                                            <p>Уставка s2</p>
+                                            <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
+                                                <input
+                                                    value={currentSettings.temperature_sp2}
+                                                    onChange={(e) =>
+                                                        setCurrentSettings(prev => prev ? {
+                                                            ...prev,
+                                                            temperature_sp2: Number(e.target.value)
+                                                        } : null)
+                                                    }
+                                                    type="number"
+                                                    className="focus-visible:outline-none bg-transparent w-full"
+                                                />
+                                            </div>
+
                                         </div>
-                                        <div className="flex items-center justify-center">
-                                            <Button className="w-22">CONFIRM</Button>
+                                        <div className="flex flex-col gap-2 mt-3">
+                                            <div className="border border-white/18 my-3" />
+                                            <div className="gap-2 flex items-center">
+                                                {isChanged("led_active") &&
+                                                    <span className="ml-2 text-yellow-400">●</span>
+                                                }
+                                                <p>Подсветка:</p>
+                                                <div className="flex gap-2 items-center">
+
+                                                    <Toggle value={currentSettings.led_active} onChange={() => {
+                                                        setCurrentSettings(prev => prev ? {
+                                                            ...prev,
+                                                            led_active: !prev.led_active
+                                                        } : null)
+                                                    }
+                                                    } />
+                                                </div>
+                                                <Button disabled={!currentSettings.led_active} onClick={handleLEDDialog}>
+                                                    <p>Выбранный цвет:</p>
+                                                    {isChanged("led_color") &&
+                                                        <span className="ml-2 text-yellow-400">●</span>
+                                                    }
+                                                    <div className="w-12 h-5 rounded-md" style={{ backgroundColor: selectedColor }}></div>
+                                                </Button>
+                                            </div>
+
+                                            <Button onClick={handleWifiDialog} className="w-full">
+                                                Настройка WiFI {isChanged("wifi") &&
+                                                    <span className="ml-2 text-yellow-400">●</span>
+                                                }
+                                            </Button>
+                                            <Button className="w-full" disabled>Привязать контроллер / пульт</Button>
                                         </div>
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Button onClick={handleUnlockDialog}>Разблокировать установку</Button>
-                                        <div className="flex gap-4 justify-between">
+                                        <div className="border border-white/18 my-3" />
+                                        <div className="gap-4 mt-6 flex justify-end">
                                             <Button
-                                                className="w-full"
-                                                onClick={() => handleSelfTest("self_test")}
-                                                disabled={loading}
+                                                variant="destructive"
+                                                onClick={handleCancel}
+                                                disabled={loading || !hasChanges}
                                             >
-                                                {loading ? <Loader2 className="animate-spin size-4" /> : "Self Test"}
+                                                Отменить
                                             </Button>
                                             <Button
-                                                className="w-full"
-                                                onClick={() => handleSelfTest("dry_self_test")}
-                                                disabled={loading}
+                                                variant="primary"
+                                                disabled={!hasChanges || loading}
+                                                onClick={handleSave}
                                             >
-                                                {loading ? <Loader2 className="animate-spin size-4" /> : "Dry Self Test"}
+                                                {loading ? <Loader2 className="animate-spin size-4" /> :
+                                                    hasChanges ? "Сохранить изменения" : "Нет изменений"
+                                                }
                                             </Button>
                                         </div>
-                                        <Button onClick={handleWifiDialog} className="w-full">
-                                            Настройка WiFI {isChanged("wifi") &&
-                                                <span className="ml-2 text-yellow-400">●</span>
-                                            }
-                                        </Button>
-                                        <Button className="w-full" disabled>Привязать контроллер / пульт</Button>
-                                    </div>
-                                </div>
-                                <div className="border border-white/18 my-3" />
-                                <p className="text-2xl font-bold">Уставки</p>
-                                <div className="border border-white/18 my-3" />
-                                <div className="grid grid-cols-4 gap-2">
-                                    <p>Работа</p>
-                                    <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                        <input
-                                            value={currentSettings.time_s1_sec}
-                                            onChange={(e) =>
-                                                setCurrentSettings(prev => prev ? {
-                                                    ...prev,
-                                                    time_s1_sec: Number(e.target.value)
-                                                } : null)
-                                            }
-                                            type="number"
-                                            className="focus-visible:outline-none bg-transparent w-full"
-                                        />
-                                    </div>
-                                    <p>Время ожидания</p>
-                                    <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                        <input
-                                            value={currentSettings.time_s2_sec}
-                                            onChange={(e) =>
-                                                setCurrentSettings(prev => prev ? {
-                                                    ...prev,
-                                                    time_s2_sec: Number(e.target.value)
-                                                } : null)
-                                            }
-                                            type="number"
-                                            className="focus-visible:outline-none bg-transparent w-full"
-                                        />
-                                    </div>
-                                    <p>Общая длительность процедуры</p>
-                                    <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                        <input
-                                            value={currentSettings.time_s3_sec}
-                                            onChange={(e) =>
-                                                setCurrentSettings(prev => prev ? {
-                                                    ...prev,
-                                                    time_s3_sec: Number(e.target.value)
-                                                } : null)
-                                            }
-                                            type="number"
-                                            className="focus-visible:outline-none bg-transparent w-full"
-                                        />
-                                    </div>
-                                    <p>Уставка s1</p>
-                                    <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                        <input
-                                            value={currentSettings.temperature_sp1}
-                                            onChange={(e) =>
-                                                setCurrentSettings(prev => prev ? {
-                                                    ...prev,
-                                                    temperature_sp1: Number(e.target.value)
-                                                } : null)
-                                            }
-                                            type="number"
-                                            className="focus-visible:outline-none bg-transparent w-full"
-                                        />
-                                    </div>
-                                    <p>Уставка s2</p>
-                                    <div className="flex p-1 h-7 bg-white/20 border border-white/18 rounded-lg w-22.5">
-                                        <input
-                                            value={currentSettings.temperature_sp2}
-                                            onChange={(e) =>
-                                                setCurrentSettings(prev => prev ? {
-                                                    ...prev,
-                                                    temperature_sp2: Number(e.target.value)
-                                                } : null)
-                                            }
-                                            type="number"
-                                            className="focus-visible:outline-none bg-transparent w-full"
-                                        />
-                                    </div>
-                                </div>
+                                    </TabsContent>
+                                </Tabs>
                             </>
                         )}
-
-                        <div className="border border-white/18 my-3" />
-                        <div className="gap-4 mt-6 flex justify-end">
-                            <Button
-                                variant="destructive"
-                                onClick={handleCancel}
-                                disabled={loading || !hasChanges}
-                            >
-                                Отменить
-                            </Button>
-                            <Button
-                                variant="primary"
-                                disabled={!hasChanges || loading}
-                                onClick={handleSave}
-                            >
-                                {loading ? <Loader2 className="animate-spin size-4" /> :
-                                    hasChanges ? "Сохранить изменения" : "Нет изменений"
-                                }
-                            </Button>
-                        </div>
                     </div>
                 </div>
             </Dialog>

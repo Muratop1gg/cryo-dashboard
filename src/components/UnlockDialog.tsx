@@ -58,7 +58,7 @@ function UnlockDialog({ open = false, onOpenChange }: DialogProps) {
         setLoading(true)
         setError(null)
         try {
-            const result = await api.securityUnlock({ system_code_long: code })
+            const result = await api.requestUnlock()
 
             // Проверяем статус ответа
             if (result?.status === 'error') {
@@ -92,7 +92,7 @@ function UnlockDialog({ open = false, onOpenChange }: DialogProps) {
 
         try {
             const cleanCode = codeInput.replace(/-/g, '')
-            const result = await api.securityUnlock({ system_code_long: cleanCode })
+            const result = await api.checkUnlockCode(cleanCode)
 
             // Проверяем статус ответа
             if (result?.status === 'error') {

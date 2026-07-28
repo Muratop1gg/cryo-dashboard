@@ -45,6 +45,7 @@ export namespace GET {
 
     export interface SettingsData {
         led_color: string
+        led_active: boolean
         blocked: "yes" | "no" | "unlocking"
         time_s1_sec: number // работа 
         time_s2_sec: number // ожидание
@@ -53,7 +54,7 @@ export namespace GET {
         temperature_sp2: number // уставка s2
         wifi?: {
             ssid: string
-            password_len: number
+            password: string
         }
     }
 }
@@ -69,6 +70,7 @@ export namespace POST {
 
     export interface SettingsData {
         led_color?: string
+        led_active?: boolean
         time_s1_sec?: number // работа 
         time_s2_sec?: number // ожидание
         time_s3_sec?: number // общая длительность процедуры
@@ -76,7 +78,7 @@ export namespace POST {
         temperature_sp2?: number // уставка s2
         wifi?: {
             ssid: string
-            password_len: number
+            password: string
         }
     }
 

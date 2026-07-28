@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ToggleProps {
     onChange(num: number): any
+    value?: number | boolean // Поддержка числа или boolean
     textDisplayed?: boolean
     texts?: string[]
     width?: number
@@ -9,15 +10,38 @@ interface ToggleProps {
     translateWidth?: number
 }
 
-function Toggle({ onChange, width = 52, height = 28, translateWidth = 22, textDisplayed = false, texts = ["выкл", "вкл"] }: ToggleProps) {
-    const [state, setState] = useState(0)
+function Toggle({
+    onChange,
+    value = 0,
+    width = 52,
+    height = 28,
+    translateWidth = 22,
+    textDisplayed = false,
+    texts = ["выкл", "вкл"]
+}: ToggleProps) {
+    // Преобразуем value в индекс
+    const getInitialState = (val: number | boolean): number => {
+        if (typeof val === 'boolean') {
+            return val ? 1 : 0
+        }
+        return val
+    }
+
+    const [state, setState] = useState(getInitialState(value))
     const statesLength = texts.length
 
+    // Обновляем состояние при изменении value пропса
+    useEffect(() => {
+        const newState = getInitialState(value)
+        if (newState >= 0 && newState < statesLength) {
+            setState(newState)
+        }
+    }, [value, statesLength])
+
     const handleToggle = () => {
-        if (state + 1 == statesLength) {
-            setState(0)
-        } else setState(state + 1)
-        onChange(state);
+        const newState = (state + 1) % statesLength
+        setState(newState)
+        onChange(newState)
     }
 
     const getCircleclasses = () => {

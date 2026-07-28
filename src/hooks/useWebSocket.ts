@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { WS } from "@/lib/api";
 
-
 // WebSocket URL
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws";
-
 
 export function useWebSocket(
   onEvent?: (event: WS.Event) => void
@@ -15,6 +13,47 @@ export function useWebSocket(
   const onEventRef = useRef(onEvent);
 
   onEventRef.current = onEvent;
+
+  // Вспомогательная функция для отправки сообщений
+  const sendMessage = (event: string, payload?: any) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.warn("[WS] Cannot send message: WebSocket is not open");
+      return false;
+    }
+
+    try {
+      const message = JSON.stringify({ event, payload });
+      wsRef.current.send(message);
+      return true;
+    } catch (e) {
+      console.error("[WS] Failed to send message:", e);
+      return false;
+    }
+  };
+
+  // Функции для отправки команд
+  const sendControllerButtonPressed = (button: "OK" | "ESC" | "RESET" | "CONFIRM") => {
+    return sendMessage("controller_button_pressed", { button });
+  };
+
+  const sendControllerButtonReleased = () => {
+    return sendMessage("controller_button_released");
+  };
+
+  const sendHoistCommandPressed = (button: "pipe_hoist_up" | "pipe_hoist_down" | "patient_hoist_up" | "patient_hoist_down") => {
+    return sendMessage("hoist_button_pressed", { button });
+  };
+
+
+  const sendMachineControl = (type: string, value: boolean) => {
+    return sendMessage("machine_controls", { type, value });
+  };
+
+  const sendSteamSpeedControl = (value: number) => {
+    // Валидация значения
+    const clampedValue = Math.max(0, Math.min(50, value));
+    return sendMessage("steam_speed_control", { value: clampedValue });
+  };
 
   useEffect(() => {
     let reconnectTimer: ReturnType<typeof setTimeout>;
@@ -75,5 +114,16 @@ export function useWebSocket(
     };
   }, []);
 
-  return { sensorData, isConnected };
+  return {
+    sensorData,
+    isConnected,
+    // Отправка команд
+    sendControllerButtonPressed,
+    sendControllerButtonReleased,
+    sendMachineControl,
+    sendHoistCommandPressed,
+    sendSteamSpeedControl,
+    // Общая функция для отправки произвольных сообщений
+    sendMessage
+  };
 }

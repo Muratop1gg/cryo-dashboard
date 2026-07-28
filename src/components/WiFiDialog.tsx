@@ -8,13 +8,13 @@ interface WiFiDialogProps {
     onWiFiSave?: (wifiData: { ssid: string; password: string }) => void
     data?: {
         ssid: string
-        password_len: number
+        password: string
     }
 }
 
 function WiFiDialog({ open = false, onOpenChange, onWiFiSave, data }: WiFiDialogProps) {
 
-    const [wifiData, setWiFiData] = useState({ ssid: data?.ssid || '', password: '*'.repeat(data?.password_len || 0) })
+    const [wifiData, setWiFiData] = useState({ ssid: data?.ssid || '', password: data?.password || '' })
 
     const handleOpen = () => {
         onOpenChange && onOpenChange()
