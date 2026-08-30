@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
-import { SystemMode } from "./types";
+// import { SystemMode } from "./types";
 // import { ToastManager } from "./components/ToastManager";
 
 import {

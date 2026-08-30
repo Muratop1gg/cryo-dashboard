@@ -61,11 +61,11 @@ function UnlockDialog({ open = false, onOpenChange }: DialogProps) {
             const result = await api.requestUnlock()
 
             // Проверяем статус ответа
-            if (result?.status === 'error') {
+            if (result?.status_code === 'error') {
                 setError(result?.message || 'Ошибка при проверке статуса разблокировки')
                 setIsErrorFromServer(true)
                 setSuccess(false)
-            } else if (result?.status === 'success') {
+            } else if (result?.status_code === 'success') {
                 setSuccess(true)
                 setPage(2)
                 setError(null)
@@ -91,24 +91,24 @@ function UnlockDialog({ open = false, onOpenChange }: DialogProps) {
         setIsErrorFromServer(false)
 
         try {
-            const cleanCode = codeInput.replace(/-/g, '')
-            const result = await api.checkUnlockCode(cleanCode)
+            // const cleanCode = codeInput.replace(/-/g, '')
+            // const result = await api.checkUnlockCode(cleanCode)
 
             // Проверяем статус ответа
-            if (result?.status === 'error') {
-                setError(result?.message || 'Неверный код разблокировки')
-                setIsErrorFromServer(true)
-                setSuccess(false)
-                // Не переключаем страницу, остаемся на странице ввода кода
-            } else if (result?.status === 'success') {
-                setSuccess(true)
-                setPage(2)
-                setError(null)
-                setIsErrorFromServer(false)
-            } else {
-                setError('Неизвестная ошибка при разблокировке')
-                setIsErrorFromServer(true)
-            }
+            // if (result?.status_code === 'error') {
+            //     setError(result?.message || 'Неверный код разблокировки')
+            //     setIsErrorFromServer(true)
+            //     setSuccess(false)
+            //     // Не переключаем страницу, остаемся на странице ввода кода
+            // } else if (result?.status_code === 'success') {
+            //     setSuccess(true)
+            //     setPage(2)
+            //     setError(null)
+            //     setIsErrorFromServer(false)
+            // } else {
+            //     setError('Неизвестная ошибка при разблокировке')
+            //     setIsErrorFromServer(true)
+            // }
         } catch (error) {
             console.error("Error during unlock:", error)
             setError('Не удалось соединиться с сервером. Проверьте подключение.')

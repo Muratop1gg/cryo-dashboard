@@ -37,7 +37,7 @@ export const formatCode = (code: string): string => {
 
 function CodeInput({ value = '', onChange, placeholder = 'xxxx-xxxx-xxxx-xxxx', className = '', onComplete, onValidityChange, onCharChange }: CodeInputProps) {
     const [inputValue, setInputValue] = useState(value)
-    const [isValid, setIsValid] = useState(false)
+    const [_, setIsValid] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
