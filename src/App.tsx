@@ -271,6 +271,13 @@ export default function App() {
             <Clock />
           </GlassCard>
 
+          <div className="w-full absolute left-0 flex items-center justify-center">
+            <GlassCard className="w-[30vw]">
+              <img src="./logo.png" />
+            </GlassCard>
+          </div>
+
+
           <GlassCard style={{ minWidth: 200, display: "flex", alignItems: "center", gap: 14 }}>
             {sensorData && <StatusPulse status={sensorData.stats.pipe_hoist} />}
             <div>
