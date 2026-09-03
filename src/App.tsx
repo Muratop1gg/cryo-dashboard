@@ -253,7 +253,6 @@ export default function App() {
 
       <div className="absolute inset-0 bg-black opacity-45" />
 
-      <div className="absolute inset-0 pointer-events-none bg-[repeating-linear-gradient(0deg,transparent,transparent_3px,rgba(0,0,0,0.12)_3px,rgba(0,0,0,0.12)_4px)]" />
 
       <div className="absolute inset-0 pointer-events-none" style={{
         background: "radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.55) 100%)",

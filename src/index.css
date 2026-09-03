@@ -69,7 +69,7 @@
     right: 0;
     height: 120px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, transparent 100%);
-    animation: scanLine 7s linear infinite;
+    /* animation: scanLine 7s linear infinite; */
     pointer-events: none;
     z-index: 9999;
   }
