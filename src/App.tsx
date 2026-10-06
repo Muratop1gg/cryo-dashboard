@@ -13,9 +13,52 @@ import {
 import { useApi } from "./hooks/useApi";
 import PWDDialog from "./components/PWDDialog";
 import { WS } from "./lib/api";
+import { EventGroup } from "./lib/events";
 
 
 const HISTORY_LENGTH = 60;
+
+const MODE_NAMES: Record<number, string> = {
+  [EventGroup.Idle]: "ПРОСТОЙ",
+  [EventGroup.Procedure]: "ПРОЦЕДУРА",
+  [EventGroup.Cooldown]: "ПРОХОЛАЖИВАНИЕ",
+  [EventGroup.Drying]: "СУШКА",
+  [EventGroup.NitrogenLoading]: "ЗАГРУЗКА АЗОТА",
+  [EventGroup.Service]: "СЕРВИСНЫЙ РЕЖИМ",
+};
+
+function getModeName(eventId: number): string {
+  const group = Math.floor(eventId / 100);
+  return MODE_NAMES[group] ?? "—";
+}
+
+function ModePulse({ mode }: { mode: string }) {
+  const color = (() => {
+    switch (mode) {
+      case "ПРОЦЕДУРА": return "rgba(120,220,180,0.85)"; // зелёный — активный
+      case "ПРОХОЛАЖИВАНИЕ": return "rgba(120,200,255,0.85)"; // голубой — холод
+      case "СУШКА": return "rgba(245,167,66,0.9)";   // оранжевый — тепло
+      case "ЗАГРУЗКА АЗОТА": return "rgba(180,140,255,0.85)"; // фиолетовый
+      case "СЕРВИСНЫЙ РЕЖИМ": return "rgba(255,120,100,0.85)"; // красный
+      case "ПРОСТОЙ":
+      default: return "rgba(255,255,255,0.35)"; // серый
+    }
+  })();
+
+  const animated = mode !== "ПРОСТОЙ";
+
+  return (
+    <div className="relative w-3 h-3 shrink-0">
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: color,
+          animation: animated ? "pulseRing 2s ease-in-out infinite" : "none",
+        }}
+      />
+    </div>
+  );
+}
 
 export default function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -35,6 +78,7 @@ export default function App() {
   const [isTimerPaused, setIsTimerPaused] = useState<boolean>(false);
   const [isChartActive, setIsChartActive] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [currentMode, setCurrentMode] = useState<string>("ПРОСТОЙ");
 
   const timerIntervalRef = useRef<number | null>(null);
   const updateCounterRef = useRef<number>(0);
@@ -62,70 +106,43 @@ export default function App() {
   }, []);
 
   const handleEvent = useCallback((event: WS.Event) => {
-    console.log("Event received:", event.event_id);
-
+    // ── Обновляем текущий режим по старшей цифре event_id ──
+    setCurrentMode(getModeName(event.event_id));
 
     switch (event.event_id) {
-
       case 100:
         // Старт процедуры
         console.log("Starting procedure");
-
         setSessionTime(HISTORY_LENGTH);
-
         setIsTimerPaused(false);
         setIsTimerRunning(true);
-
         resetTemperatureHistory();
-
-        // включаем запись графика
         setIsChartActive(true);
-
         break;
-
 
       case 101:
-        // Пауза
         console.log("Pause timer");
-
         setIsTimerPaused(true);
         setIsTimerRunning(false);
-
-        // график замораживаем
         setIsChartActive(false);
-
         break;
-
 
       case 102:
-        // Возобновление
         console.log("Resume timer");
-
         setIsTimerPaused(false);
         setIsTimerRunning(true);
-
-        // продолжаем график
         setIsChartActive(true);
-
         break;
-
 
       case 103:
-        // Стоп
         console.log("Stop timer");
-
         setSessionTime(0);
-
         setIsTimerPaused(false);
         setIsTimerRunning(false);
-
         setIsChartActive(false);
-
         resetTemperatureHistory();
-
         break;
     }
-
   }, [resetTemperatureHistory]);
 
 
@@ -263,10 +280,10 @@ export default function App() {
         <div className="flex justify-between gap-5">
 
           <GlassCard style={{ minWidth: 220, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
-            <div className="text-sm uppercase opacity-95 text-white tracking-[0.3em]">
+            {/* <div className="text-sm uppercase opacity-95 text-white tracking-[0.3em]">
               CryoOne
-            </div>
-            <Label>{isConnected ? "Подключен" : "Отключен"}</Label>
+            </div> */}
+            {/* <Label>{isConnected ? "Подключен" : "Отключен"}</Label> */}
             <Clock />
           </GlassCard>
 
@@ -276,13 +293,11 @@ export default function App() {
             </GlassCard>
           </div>
 
-
-          <GlassCard style={{ minWidth: 200, display: "flex", alignItems: "center", gap: 14 }}>
-            {sensorData && <StatusPulse status={sensorData.stats.pipe_hoist} />}
-            <div>
-              <Label>СТАТУС</Label>
-              <div className="font-bold tracking-wider leading-tight text-4xl text-white opacity-92" >
-                {/* {sensorData && sensorData.SystemStatus.currentMode} */}
+          <GlassCard style={{ minWidth: 220, display: "flex", alignItems: "center", gap: 14 }}>
+            <ModePulse mode={currentMode} />
+            <div className="flex w-full">
+              <div className="tracking-wider leading-tight text-4xl text-white opacity-92">
+                {currentMode}
               </div>
             </div>
           </GlassCard>
@@ -346,7 +361,7 @@ export default function App() {
                 </div>
                 <div>
                   <Label>ТЕМПЕРАТУРА</Label>
-                  {sensorData && <BigValue value={sensorData.sensor_data.t1} unit="°C" trend={"1"} />}
+                  {<BigValue value={sensorData?.sensor_data.t1 || 0} unit="°C" trend={"1"} />}
                 </div>
               </div>
             </GlassCard>
@@ -374,14 +389,14 @@ export default function App() {
             <GlassCard className="flex-1 max-w-lg h-[10vh] flex items-center justify-center gap-5">
               <div className="flex gap-2">
                 <Label>O2 - </Label>
-                {sensorData && <MidValue value={sensorData.sensor_data.oxygen} />}
+                {<MidValue value={sensorData?.sensor_data.oxygen || 0} />}
                 <Label>%</Label>
               </div>
             </GlassCard>
             <GlassCard className="flex-1 max-w-lg h-[10vh] flex items-center justify-center gap-5">
               <div className="flex gap-2">
                 <Label>Rh - </Label>
-                {sensorData && <MidValue value={sensorData.sensor_data.humidity} />}
+                {<MidValue value={sensorData?.sensor_data.humidity || 0} />}
                 <Label>%</Label>
               </div>
             </GlassCard>
@@ -425,7 +440,7 @@ function Label({ children }: { children: React.ReactNode }) {
 function BigValue({ value, unit, trend }: { value: number; unit: string; trend?: string }) {
   return (
     <div className="flex items-end gap-2 leading-none">
-      <span className="text-9xl font-bold text-white/95 tracking-[-0.02em] leading-none">
+      <span className="text-8xl font-bold text-white/95 tracking-[-0.02em] leading-none">
         {parseInt(value.toString())}
       </span>
       {unit && (
@@ -518,9 +533,9 @@ function Clock() {
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="text-white text-xl font-bold">
+    <div className="text-white text-3xl flex flex-col tracking-wider">
       {time.toLocaleTimeString("ru-RU")}
-      <span className="ml-2">
+      <span className="">
         {time.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}
       </span>
     </div>
