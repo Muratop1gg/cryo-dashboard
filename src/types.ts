@@ -1,27 +1,37 @@
 // types.ts
-export type EventType =
-  | "patient_lift_up"
-  | "patient_lift_down"
-  | "patient_lift_stop"
-  | "tube_lift_up"
-  | "tube_lift_down"
-  | "tube_lift_stop";
 
-export interface CapsuleEvent {
-  id?: string;
-  type: EventType;
-  message?: string;
-  timestamp?: number;
-  sequence?: number;
+import { WS } from "./lib/api";
+
+
+export type ToastKey =
+  | "patient_up"
+  | "patient_down"
+  | "patient_alarm"
+  | "tube_up"
+  | "tube_down"
+  | "tube_alarm";
+
+export interface ToastEvent {
+  /** Уникальный идентификатор конкретного события (для дедупликации) */
+  uid: string;
+  event: WS.Event;
 }
 
-export interface ActiveLift {
-  type: string;
-  event: CapsuleEvent;
-  startTime: number;
+export interface ActiveToast {
   id: string;
+  key: ToastKey;
+  event: WS.Event;
+  startTime: number;
   leaving?: boolean;
 }
+
+// export interface ActiveLift {
+//   type: string;
+//   event: CapsuleEvent;
+//   startTime: number;
+//   id: string;
+//   leaving?: boolean;
+// }
 
 // Типы для возможных значений
 export type SystemMode = 'stdby' | 'autotest' | 'drying' | 'cooling' | 'working';

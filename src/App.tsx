@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
-// import { SystemMode } from "./types";
-// import { ToastManager } from "./components/ToastManager";
 
 import {
   ResponsiveContainer,
@@ -14,6 +12,8 @@ import { useApi } from "./hooks/useApi";
 import PWDDialog from "./components/PWDDialog";
 import { WS } from "./lib/api";
 import { EventGroup } from "./lib/events";
+import { ToastManager } from "./components/ToastManager";
+import { ToastEvent } from "./types";
 
 
 const HISTORY_LENGTH = 60;
@@ -79,6 +79,8 @@ export default function App() {
   const [isChartActive, setIsChartActive] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [currentMode, setCurrentMode] = useState<string>("ПРОСТОЙ");
+  const [toastEvents, setToastEvents] = useState<ToastEvent[]>([]);
+  const eventUidRef = useRef(0);
 
   const timerIntervalRef = useRef<number | null>(null);
   const updateCounterRef = useRef<number>(0);
@@ -108,6 +110,14 @@ export default function App() {
   const handleEvent = useCallback((event: WS.Event) => {
     // ── Обновляем текущий режим по старшей цифре event_id ──
     setCurrentMode(getModeName(event.event_id));
+
+    // ── Кладём событие в очередь тостера с уникальным uid ──
+    const uid = `${event.event_id}_${eventUidRef.current++}`;
+    setToastEvents((prev) => {
+      const next = [...prev, { uid, event }];
+      // ограничиваем буфер, чтобы не рос бесконечно
+      return next.length > 50 ? next.slice(-50) : next;
+    });
 
     switch (event.event_id) {
       case 100:
@@ -280,11 +290,12 @@ export default function App() {
         <div className="flex justify-between gap-5">
 
           <GlassCard style={{ minWidth: 220, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
-            {/* <div className="text-sm uppercase opacity-95 text-white tracking-[0.3em]">
-              CryoOne
-            </div> */}
-            {/* <Label>{isConnected ? "Подключен" : "Отключен"}</Label> */}
-            <Clock />
+            <div className="flex items-center gap-4">
+              <div className={`${!isConnected ? "bg-[#f87171]" : "bg-[#34d399]"} rounded-full size-3`}></div>
+              {/* <Label>{isConnected ? "Подключен" : "Отключен"}</Label> */}
+              <Clock />
+            </div>
+
           </GlassCard>
 
           <div className="w-full absolute left-0 flex items-center justify-center">
@@ -403,6 +414,7 @@ export default function App() {
           </div>
         </div>
       </div>
+      <ToastManager events={toastEvents} />
       <PWDDialog open={isMenuOpen} onOpenChange={() => { setIsMenuOpen(false) }} />
     </div >
   );
@@ -533,9 +545,10 @@ function Clock() {
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="text-white text-3xl flex flex-col tracking-wider">
+    <div className="text-white text-3xl flex gap-2 tracking-wider">
       {time.toLocaleTimeString("ru-RU")}
       <span className="">
+        {" | "}
         {time.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}
       </span>
     </div>

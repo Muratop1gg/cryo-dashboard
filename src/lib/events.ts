@@ -69,3 +69,41 @@ export function formatEventId(id: number): string {
         `sub${subgroup}`;
     return `${g}.${s}[${param}]`;
 }
+
+export type HoistKind = "patient" | "tube";
+
+export interface HoistState {
+    kind: HoistKind;
+    subgroup: number;
+}
+
+/** Вернёт kind+subgroup, если событие относится к лебёдке пациента или трубоподъёмнику */
+export function getHoistState(eventId: number): HoistState | null {
+    const subgroup = Math.floor((eventId % 100) / 10);
+    if (subgroup === EventSubgroup.PatientHoist) return { kind: "patient", subgroup };
+    if (subgroup === EventSubgroup.PipeHoist) return { kind: "tube", subgroup };
+    return null;
+}
+
+/** Ключ тоста из event_id (или null, если событие не про тосты) */
+export function getToastKey(eventId: number): import("../types").ToastKey | null {
+    const hoist = getHoistState(eventId);
+    if (!hoist) return null;
+
+    const param = eventId % 10;
+    const prefix = hoist.kind; // "patient" | "tube"
+
+    switch (param) {
+        case HoistParam.Up: return `${prefix}_up` as const;
+        case HoistParam.Down: return `${prefix}_down` as const;
+        case HoistParam.Alarm: return `${prefix}_alarm` as const;
+        default: return null; // Stop обрабатывается отдельно
+    }
+}
+
+/** Является ли событие «стопом» для механизма */
+export function isHoistStop(eventId: number): boolean {
+    const hoist = getHoistState(eventId);
+    if (!hoist) return false;
+    return eventId % 10 === HoistParam.Stop;
+}

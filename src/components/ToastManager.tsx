@@ -1,162 +1,110 @@
 // ToastManager.tsx
-import { useEffect, useState, useRef } from "react";
-import { CapsuleEvent, ActiveLift } from "../types";
-import { EventToast } from "./EventToast";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ActiveToast, ToastEvent } from "../types";
+import { EventToast } from "./EventToast";
+import { getHoistState, getToastKey, isHoistStop } from "../lib/events";
 
 interface ToastManagerProps {
-    events: CapsuleEvent[];
+    events: ToastEvent[];
 }
 
+type Kind = "patient" | "tube";
+
 export function ToastManager({ events }: ToastManagerProps) {
-    const [activeLifts, setActiveLifts] = useState<Map<string, ActiveLift>>(new Map());
-    const processedEvents = useRef<Set<string>>(new Set());
+    const [toasts, setToasts] = useState<Map<Kind, ActiveToast>>(new Map());
+    const processed = useRef<Set<string>>(new Set());
 
     useEffect(() => {
-        events.forEach((event) => {
-            // Используем уникальный ID события чтобы не обрабатывать одно событие дважды
-            const eventId = event.id || `${event.type}_${event.timestamp}_${event.sequence}`;
-            if (processedEvents.current.has(eventId)) {
-                return;
-            }
-            processedEvents.current.add(eventId);
+        events.forEach(({ uid, event }) => {
+            if (processed.current.has(uid)) return;
+            processed.current.add(uid);
 
-            const type = event.type;
+            const hoist = getHoistState(event.event_id);
+            if (!hoist) return;
 
-            // Обработка stop событий
-            if (type.includes("stop")) {
-                const liftTypeBase = type.replace("_stop", "");
+            const kind: Kind = hoist.kind;
 
-                setActiveLifts((prev) => {
-                    const newMap = new Map(prev);
-
-                    const upKey = `${liftTypeBase}_up`;
-                    const downKey = `${liftTypeBase}_down`;
-
-                    if (newMap.has(upKey)) {
-                        const lift = newMap.get(upKey)!;
-                        newMap.set(upKey, {
-                            ...lift,
-                            leaving: true,
-                        });
-                    }
-
-                    if (newMap.has(downKey)) {
-                        const lift = newMap.get(downKey)!;
-                        newMap.set(downKey, {
-                            ...lift,
-                            leaving: true,
-                        });
-                    }
-
-                    return newMap;
+            // ── STOP: помечаем текущий тост как уходящий ──
+            if (isHoistStop(event.event_id)) {
+                setToasts((prev) => {
+                    const existing = prev.get(kind);
+                    if (!existing || existing.leaving) return prev;
+                    const next = new Map(prev);
+                    next.set(kind, { ...existing, leaving: true });
+                    return next;
                 });
-
                 return;
             }
 
-            // Обработка событий движения
-            // console.log("MOTION event received:", type);
+            // ── UP / DOWN / ALARM: создаём/заменяем тост ──
+            const key = getToastKey(event.event_id);
+            if (!key) return;
 
-            setActiveLifts((prev) => {
-                const newMap = new Map(prev);
+            const toast: ActiveToast = {
+                id: `${kind}_${key}_${uid}`,
+                key,
+                event,
+                startTime: Date.now(),
+            };
 
-                // Сохраняем с полным ключом (например, patient_lift_up)
-                newMap.set(type, {
-                    type: type,
-                    event: event,
-                    startTime: Date.now(),
-                    id: event.id || `${type}_${Date.now()}`,
-                });
-
-                // console.log("Active lifts after update:", Array.from(newMap.keys()));
-                return newMap;
+            setToasts((prev) => {
+                const next = new Map(prev);
+                next.set(kind, toast);
+                return next;
             });
         });
     }, [events]);
 
-    const handleUnmount = (liftType: string) => {
-        // console.log("Unmounting toast for:", liftType);
-        setActiveLifts((prev) => {
-            const newMap = new Map(prev);
-            newMap.delete(liftType);
-            return newMap;
+    const handleUnmount = (kind: Kind, id: string) => {
+        setToasts((prev) => {
+            const cur = prev.get(kind);
+            if (!cur || cur.id !== id) return prev;
+            const next = new Map(prev);
+            next.delete(kind);
+            return next;
         });
     };
 
-    // Разделяем тосты по типу и позиции
-    const patientTopToasts: ActiveLift[] = [];
-    const patientBottomToasts: ActiveLift[] = [];
-    const tubeTopToasts: ActiveLift[] = [];
-    const tubeBottomToasts: ActiveLift[] = [];
-
-    activeLifts.forEach((lift) => {
-        const isPatient = lift.type.includes("patient");
-        const isUp = lift.type.includes("up");
-
-        if (isPatient) {
-            if (isUp) {
-                patientTopToasts.push(lift);
-            } else {
-                patientBottomToasts.push(lift);
-            }
-        } else {
-            if (isUp) {
-                tubeTopToasts.push(lift);
-            } else {
-                tubeBottomToasts.push(lift);
-            }
-        }
+    const topToasts: ActiveToast[] = [];
+    const bottomToasts: ActiveToast[] = [];
+    toasts.forEach((t) => {
+        if (t.key.startsWith("patient")) topToasts.push(t);
+        else bottomToasts.push(t);
     });
 
     return (
         <>
-            {/* Верхние тосты - располагаем горизонтально */}
-            <div
-                className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-row gap-4 items-start justify-center pointer-events-none"
-            >
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-row gap-4 items-start justify-center pointer-events-none">
                 <AnimatePresence>
-                    {[...patientTopToasts, ...tubeTopToasts].map((lift) => (
+                    {topToasts.map((t) => (
                         <motion.div
-                            key={lift.id}
+                            key={t.id}
                             layout
-                            transition={{
-                                layout: {
-                                    duration: 0.5,
-                                    ease: "easeOut",
-                                },
-                            }}
+                            transition={{ layout: { duration: 0.5, ease: "easeOut" } }}
                         >
                             <EventToast
-                                event={lift.event}
-                                leaving={lift.leaving}
-                                onUnmount={() => handleUnmount(lift.type)}
+                                toastKey={t.key}
+                                leaving={t.leaving}
+                                onUnmount={() => handleUnmount("patient", t.id)}
                             />
                         </motion.div>
                     ))}
                 </AnimatePresence>
             </div>
 
-            {/* Нижние тосты - располагаем горизонтально */}
-            <div
-                className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-row gap-4 items-end justify-center pointer-events-none"
-            >
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-row gap-4 items-end justify-center pointer-events-none">
                 <AnimatePresence>
-                    {[...patientBottomToasts, ...tubeBottomToasts].map((lift) => (
+                    {bottomToasts.map((t) => (
                         <motion.div
-                            key={lift.id}
+                            key={t.id}
                             layout
-                            transition={{
-                                layout: {
-                                    duration: 0.5,
-                                    ease: "easeOut",
-                                },
-                            }}
+                            transition={{ layout: { duration: 0.5, ease: "easeOut" } }}
                         >
                             <EventToast
-                                event={lift.event}
-                                leaving={lift.leaving}
-                                onUnmount={() => handleUnmount(lift.type)}
+                                toastKey={t.key}
+                                leaving={t.leaving}
+                                onUnmount={() => handleUnmount("tube", t.id)}
                             />
                         </motion.div>
                     ))}
