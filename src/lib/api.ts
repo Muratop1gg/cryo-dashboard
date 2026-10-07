@@ -160,6 +160,21 @@ export namespace WS {
     export interface SteamSpeedControl {
         value: number // between 0 and 50
     }
+
+    export type ConnectionName = "modbus" | "zigbee";
+    export type ConnectionState = "online" | "offline";
+
+    export interface ConnectionStatusPayload {
+        /** "modbus" | "zigbee" | "snapshot" */
+        name: ConnectionName | "snapshot";
+        /** для snapshot — объект, для modbus/zigbee — строка */
+        status: ConnectionState | Partial<Record<ConnectionName, ConnectionState>>;
+    }
+
+    export interface ConnectionStatus {
+        modbus: ConnectionState;
+        zigbee: ConnectionState;
+    }
 }
 
 // ========== API ФУНКЦИИ ==========

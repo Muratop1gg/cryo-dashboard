@@ -9,8 +9,14 @@ export function useWebSocket(
 ) {
   const [sensorData, setSensorData] = useState<WS.SensorsData | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<WS.ConnectionStatus>({
+    modbus: "offline",
+    zigbee: "offline",
+  });
+
   const wsRef = useRef<WebSocket | null>(null);
   const onEventRef = useRef(onEvent);
+
 
   onEventRef.current = onEvent;
 
@@ -82,6 +88,19 @@ export function useWebSocket(
               onEventRef.current(data.payload as WS.Event);
               // console.log("[WS] Event received:", event);
             }
+            else if (data.event === "connection_status") {
+              const p = data.payload as WS.ConnectionStatusPayload;
+
+              if (p.name === "snapshot" && typeof p.status === "object") {
+                // снапшот: { modbus: "online", zigbee: "offline" }
+                setConnectionStatus((prev) => ({ ...prev, ...(p.status as object) }));
+              } else if (p.name === "modbus" || p.name === "zigbee") {
+                setConnectionStatus((prev) => ({
+                  ...prev,
+                  [p.name]: p.status as WS.ConnectionState,
+                }));
+              }
+            }
             else if (data.event === "connection_established") {
               // console.log("[WS] Connection established:", data.message);
             }
@@ -122,6 +141,7 @@ export function useWebSocket(
     sendControllerButtonReleased,
     sendMachineControl,
     sendHoistCommandPressed,
+    connectionStatus,
     sendSteamSpeedControl,
     // Общая функция для отправки произвольных сообщений
     sendMessage

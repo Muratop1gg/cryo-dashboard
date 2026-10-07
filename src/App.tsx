@@ -186,7 +186,7 @@ export default function App() {
 
   }, [isTimerRunning, isTimerPaused]);
 
-  const { sensorData, isConnected } = useWebSocket(handleEvent);
+  const { sensorData, isConnected, connectionStatus } = useWebSocket(handleEvent);
 
   const api = useApi();
 
@@ -291,7 +291,7 @@ export default function App() {
 
           <GlassCard style={{ minWidth: 220, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
             <div className="flex items-center gap-4">
-              <div className={`${!isConnected ? "bg-[#f87171]" : "bg-[#34d399]"} rounded-full size-3`}></div>
+              <div className={`${(!isConnected || connectionStatus.modbus !== "online" || connectionStatus.zigbee !== "online") ? "bg-[#f87171]" : "bg-[#34d399]"} rounded-full size-3`}></div>
               {/* <Label>{isConnected ? "Подключен" : "Отключен"}</Label> */}
               <Clock />
             </div>
