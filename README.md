@@ -251,8 +251,8 @@ interface WS.Event {
 interface WS.ProcedureState {
   action: "start" | "pause" | "resume" | "stop" | null // null - снимок при подключении
   status: "stopped" | "running" | "paused"
-  elapsed_time: number
-  duration_sec: number
+  elapsed_time?: number
+  duration_sec?: number
 }
 ```
 

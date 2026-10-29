@@ -183,8 +183,8 @@ export namespace WS {
         /** что произошло; null - снимок состояния при подключении */
         action: "start" | "pause" | "resume" | "stop" | null
         status: "stopped" | "running" | "paused"
-        elapsed_time: number
-        duration_sec: number
+        elapsed_time?: number
+        duration_sec?: number
     }
 
     export interface SteamSpeedControl {
