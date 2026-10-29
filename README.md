@@ -16,8 +16,12 @@
 
 - [`sensors_data`]()
 - [`event`]()
+- [`procedure_state`]()
+- [`connection_status`]()
 - [`controller_button_pressed`]()
 - [`controller_button_released`]()
+- [`hoist_button_pressed`]()
+- [`hoist_button_released`]()
 - [`machine_controls`]()
 - [`steam_speed_control`]()
 
@@ -241,6 +245,28 @@ interface WS.Event {
 }
 ```
 
+#### Type: `procedure_state`
+
+```typescript
+interface WS.ProcedureState {
+  action: "start" | "pause" | "resume" | "stop" | null // null - снимок при подключении
+  status: "stopped" | "running" | "paused"
+  elapsed_time?: number
+  duration_sec?: number
+}
+```
+
+Таймер процедуры работает от этого сообщения: коды `event_id` 100-103 заняты группой "Простой".
+
+#### Type: `connection_status`
+
+```typescript
+interface WS.ConnectionStatusPayload {
+  name: "modbus" | "zigbee" | "snapshot"
+  status: "online" | "offline" | { modbus, zigbee }
+}
+```
+
 ## OUTGOING
 
 #### Type: `controller_button_pressed`
@@ -253,13 +279,31 @@ interface WS.ControllerButtonPressed {
 
 #### Type: `controller_button_released`
 
-`no data`
+```typescript
+interface WS.ControllerButtonReleased {
+  button?: "OK" | "ESC" | "RESET" | "CONFIRM" // без кнопки бэкенд отпускает все кнопки этого клиента
+}
+```
+
+Кнопки в сервисном меню работают как физические: `pressed` при нажатии, `released` при отпускании.
+Бэкенд пишет в coil кнопки 1/0 по Modbus. Если вкладка закрылась или связь оборвалась, бэкенд отпускает кнопки сам.
+
+#### Type: `hoist_button_pressed` / `hoist_button_released`
+
+```typescript
+interface WS.HoistButton {
+  button: "pipe_hoist_up" | "pipe_hoist_down" | "patient_hoist_up" | "patient_hoist_down"
+}
+```
 
 #### Type: `machine_controls`
 
 ```typescript
 interface WS.MachineControl {
-  type: string
+  type: "blower" | "steam_generator" | "steam_direction"
+      | "patient_hoist" | "patient_hoist_direction" // direction: true - вниз
+      | "pipe_hoist" | "pipe_hoist_direction"
+      | "heater" | "exhaust_fan" | "exhaust_damper" | "led"
   value: boolean
 }
 ```

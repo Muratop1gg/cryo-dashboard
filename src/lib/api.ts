@@ -148,13 +148,43 @@ export namespace WS {
         event_id: number // for digits code
     }
 
+    export type ControllerButton = "OK" | "ESC" | "RESET" | "CONFIRM"
+
     export interface ControllerButtonPressed {
-        button: "OK" | "ESC" | "RESET" | "CONFIRM"
+        button: ControllerButton
     }
 
+    export interface ControllerButtonReleased {
+        /** без кнопки бэкенд отпускает все кнопки, зажатые этим клиентом */
+        button?: ControllerButton
+    }
+
+    export type HoistButton = "pipe_hoist_up" | "pipe_hoist_down" | "patient_hoist_up" | "patient_hoist_down"
+
+    export type MachineControlType =
+        | "blower"                   // нагнетатель
+        | "steam_generator"          // парогенератор
+        | "steam_direction"          // true - реверс
+        | "patient_hoist"            // лебёдка пациента: пуск
+        | "patient_hoist_direction"  // true - вниз
+        | "pipe_hoist"               // трубоподъемник: пуск
+        | "pipe_hoist_direction"     // true - вниз
+        | "heater"                   // ТЭН
+        | "exhaust_fan"              // вентилятор вытяжки
+        | "exhaust_damper"           // true - заслонка открыта
+        | "led"                      // подсветка
+
     export interface MachineControl {
-        type: string
+        type: MachineControlType
         value: boolean
+    }
+
+    export interface ProcedureState {
+        /** что произошло; null - снимок состояния при подключении */
+        action: "start" | "pause" | "resume" | "stop" | null
+        status: "stopped" | "running" | "paused"
+        elapsed_time?: number
+        duration_sec?: number
     }
 
     export interface SteamSpeedControl {

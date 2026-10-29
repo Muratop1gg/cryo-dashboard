@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { WS } from "@/lib/api";
 
 // WebSocket URL
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws";
 
 export function useWebSocket(
-  onEvent?: (event: WS.Event) => void
+  onEvent?: (event: WS.Event) => void,
+  onProcedureState?: (state: WS.ProcedureState) => void
 ) {
   const [sensorData, setSensorData] = useState<WS.SensorsData | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -16,12 +17,14 @@ export function useWebSocket(
 
   const wsRef = useRef<WebSocket | null>(null);
   const onEventRef = useRef(onEvent);
+  const onProcedureStateRef = useRef(onProcedureState);
 
 
   onEventRef.current = onEvent;
+  onProcedureStateRef.current = onProcedureState;
 
   // Вспомогательная функция для отправки сообщений
-  const sendMessage = (event: string, payload?: any) => {
+  const sendMessage = useCallback((event: string, payload?: any) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       console.warn("[WS] Cannot send message: WebSocket is not open");
       return false;
@@ -35,31 +38,34 @@ export function useWebSocket(
       console.error("[WS] Failed to send message:", e);
       return false;
     }
-  };
+  }, []);
 
   // Функции для отправки команд
-  const sendControllerButtonPressed = (button: "OK" | "ESC" | "RESET" | "CONFIRM") => {
-    return sendMessage("controller_button_pressed", { button });
-  };
+  const sendControllerButtonPressed = useCallback((button: WS.ControllerButton) => {
+    return sendMessage("controller_button_pressed", { button } as WS.ControllerButtonPressed);
+  }, [sendMessage]);
 
-  const sendControllerButtonReleased = () => {
-    return sendMessage("controller_button_released");
-  };
+  const sendControllerButtonReleased = useCallback((button?: WS.ControllerButton) => {
+    return sendMessage("controller_button_released", { button } as WS.ControllerButtonReleased);
+  }, [sendMessage]);
 
-  const sendHoistCommandPressed = (button: "pipe_hoist_up" | "pipe_hoist_down" | "patient_hoist_up" | "patient_hoist_down") => {
+  const sendHoistCommandPressed = useCallback((button: WS.HoistButton) => {
     return sendMessage("hoist_button_pressed", { button });
-  };
+  }, [sendMessage]);
 
+  const sendHoistCommandReleased = useCallback((button?: WS.HoistButton) => {
+    return sendMessage("hoist_button_released", { button });
+  }, [sendMessage]);
 
-  const sendMachineControl = (type: string, value: boolean) => {
-    return sendMessage("machine_controls", { type, value });
-  };
+  const sendMachineControl = useCallback((type: WS.MachineControlType, value: boolean) => {
+    return sendMessage("machine_controls", { type, value } as WS.MachineControl);
+  }, [sendMessage]);
 
-  const sendSteamSpeedControl = (value: number) => {
+  const sendSteamSpeedControl = useCallback((value: number) => {
     // Валидация значения
     const clampedValue = Math.max(0, Math.min(50, value));
-    return sendMessage("steam_speed_control", { value: clampedValue });
-  };
+    return sendMessage("steam_speed_control", { value: clampedValue } as WS.SteamSpeedControl);
+  }, [sendMessage]);
 
   useEffect(() => {
     let reconnectTimer: ReturnType<typeof setTimeout>;
@@ -87,6 +93,12 @@ export function useWebSocket(
             else if (data.event === "event" && onEventRef.current) {
               onEventRef.current(data.payload as WS.Event);
               // console.log("[WS] Event received:", event);
+            }
+            else if (data.event === "procedure_state" && onProcedureStateRef.current) {
+              onProcedureStateRef.current(data.payload as WS.ProcedureState);
+            }
+            else if (data.event === "error") {
+              console.warn("[WS] Command rejected:", data.payload?.message);
             }
             else if (data.event === "connection_status") {
               const p = data.payload as WS.ConnectionStatusPayload;
@@ -141,6 +153,7 @@ export function useWebSocket(
     sendControllerButtonReleased,
     sendMachineControl,
     sendHoistCommandPressed,
+    sendHoistCommandReleased,
     connectionStatus,
     sendSteamSpeedControl,
     // Общая функция для отправки произвольных сообщений

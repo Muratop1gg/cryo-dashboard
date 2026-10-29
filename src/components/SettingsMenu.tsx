@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Dialog from "./Dialog";
 import Toggle from "./Toggle";
 import { Slider } from "./ui/slider";
 import WiFiDialog from "./WiFiDialog";
 import LEDDialog from "./LEDDialog";
 import Button from "./button";
+import HoldButton from "./HoldButton";
 import UnlockDialog from "./UnlockDialog";
 import { Loader2 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
@@ -39,11 +40,51 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
     const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const { sensorData } = useWebSocket();
+    // Ручное управление исполнительными устройствами
+    const [controls, setControls] = useState({
+        blower: false,
+        steam_generator: false,
+        steam_frequency: 0,
+        patient_hoist: false,
+        patient_hoist_down: false,
+        pipe_hoist: false,
+        pipe_hoist_down: false,
+        heater: false,
+        exhaust_fan: false,
+        exhaust_damper: false,
+    });
+
+    const {
+        sensorData,
+        isConnected,
+        connectionStatus,
+        sendControllerButtonPressed,
+        sendControllerButtonReleased,
+        sendMachineControl,
+        sendSteamSpeedControl,
+    } = useWebSocket();
+
+    const controlsAvailable = isConnected && connectionStatus.modbus === "online";
 
     useEffect(() => {
         setAdminInfo(sensorData)
     }, [sensorData])
+
+    // Тест, запущенный/остановленный на самом контроллере, тоже отображаем
+    const testRunning = sensorData?.diagnostics?.test?.running;
+    const testStageFromMachine = sensorData?.diagnostics?.test?.stage;
+    const prevTestRunning = useRef<boolean | undefined>(undefined);
+    useEffect(() => {
+        if (testRunning === undefined) return;
+        if (testRunning) {
+            setSelfTestRunning(true);
+            setTestStage(testStageFromMachine);
+        } else if (prevTestRunning.current) {
+            setSelfTestRunning(false);
+            setTestStage(undefined);
+        }
+        prevTestRunning.current = testRunning;
+    }, [testRunning, testStageFromMachine])
 
     // Загрузка данных при открытии
     useEffect(() => {
@@ -282,6 +323,30 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
         } finally {
             setLoading(false);
         }
+    };
+
+    // --- Ручное управление ---
+    const setControl = (type: api.WS.MachineControlType, value: boolean) => {
+        setControls(prev => ({ ...prev, [type]: value }));
+        sendMachineControl(type, value);
+    };
+
+    const setHoistRunning = (hoist: "patient_hoist" | "pipe_hoist", running: boolean) => {
+        if (running) {
+            // направление должно быть выставлено до пуска
+            sendMachineControl(`${hoist}_direction`, controls[`${hoist}_down`]);
+        }
+        setControl(hoist, running);
+    };
+
+    const setHoistDirection = (hoist: "patient_hoist" | "pipe_hoist", down: boolean) => {
+        setControls(prev => ({ ...prev, [`${hoist}_down`]: down }));
+        sendMachineControl(`${hoist}_direction`, down);
+    };
+
+    const setSteamFrequency = (value: number) => {
+        setControls(prev => ({ ...prev, steam_frequency: value }));
+        sendSteamSpeedControl(value);
     };
 
     const isChanged = (key: keyof api.POST.SettingsData) => {
@@ -558,39 +623,51 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
                                     <TabsContent className="mt-0" value="controls">
                                         <div className="border border-white/18 mb-3" />
                                         <div className="grid grid-cols-2 gap-2">
+                                            {!controlsAvailable && (
+                                                <p className="col-span-2 text-red-500">Нет связи с контроллером, команды не будут выполнены</p>
+                                            )}
                                             <p>Двигатель нагнетателя</p>
                                             <div className="flex gap-2 items-center">
-                                                <Toggle onChange={() => console.log("Toggle")} />
+                                                <Toggle value={controls.blower} onChange={(v) => setControl("blower", v === 1)} />
                                             </div>
                                             <p>Двигатель парогенератора</p>
                                             <div className="flex gap-2 items-center justify-center">
-                                                <Toggle onChange={() => console.log("Toggle")} />
-                                                <Slider max={50} step={1} defaultValue={0} />
+                                                <Toggle value={controls.steam_generator} onChange={(v) => setControl("steam_generator", v === 1)} />
+                                                <Slider
+                                                    max={50}
+                                                    step={1}
+                                                    value={controls.steam_frequency}
+                                                    onValueChange={(v) => setControls(prev => ({ ...prev, steam_frequency: v as number }))}
+                                                    onValueCommitted={(v) => setSteamFrequency(v as number)}
+                                                />
+                                                <p className="w-14 text-right text-white/50">{controls.steam_frequency} Гц</p>
                                             </div>
                                             <p>Двигатель лебедки подъёмника пациента</p>
                                             <div className="flex gap-2">
-                                                <Toggle onChange={() => console.log("Toggle")} />
-                                                <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={() => console.log("Toggle")} />
+                                                <Toggle value={controls.patient_hoist} onChange={(v) => setHoistRunning("patient_hoist", v === 1)} />
+                                                <Toggle value={controls.patient_hoist_down} textDisplayed texts={["вверх", "вниз"]} width={68} onChange={(v) => setHoistDirection("patient_hoist", v === 1)} />
                                             </div>
                                             <p>Двигатель трубоподъемника</p>
                                             <div className="flex gap-2">
-                                                <Toggle onChange={() => console.log("Toggle")} />
-                                                <Toggle textDisplayed texts={["вверх", "вниз"]} width={68} onChange={() => console.log("Toggle")} />
+                                                <Toggle value={controls.pipe_hoist} onChange={(v) => setHoistRunning("pipe_hoist", v === 1)} />
+                                                <Toggle value={controls.pipe_hoist_down} textDisplayed texts={["вверх", "вниз"]} width={68} onChange={(v) => setHoistDirection("pipe_hoist", v === 1)} />
                                             </div>
                                             <p>ТЭН</p>
-                                            <Toggle onChange={() => console.log("Toggle")} />
+                                            <Toggle value={controls.heater} onChange={(v) => setControl("heater", v === 1)} />
                                             <p>Вентилятор Вытяжки</p>
-                                            <Toggle onChange={() => console.log("Toggle")} />
+                                            <Toggle value={controls.exhaust_fan} onChange={(v) => setControl("exhaust_fan", v === 1)} />
+                                            <p>Заслонка вытяжки</p>
+                                            <Toggle value={controls.exhaust_damper} textDisplayed texts={["закр", "откр"]} width={68} onChange={(v) => setControl("exhaust_damper", v === 1)} />
                                             <div className="flex items-center justify-center w-80 gap-3 rounded-xl py-6 border border-white/18 bg-white/10">
                                                 <div className="flex items-center justify-center">
-                                                    <Button className="w-22">OK</Button>
+                                                    <HoldButton className="w-22" disabled={!isConnected} onPress={() => sendControllerButtonPressed("OK")} onRelease={() => sendControllerButtonReleased("OK")}>OK</HoldButton>
                                                 </div>
                                                 <div className="flex flex-col gap-8">
-                                                    <Button className="w-22">ESC</Button>
-                                                    <Button className="w-22">RESET</Button>
+                                                    <HoldButton className="w-22" disabled={!isConnected} onPress={() => sendControllerButtonPressed("ESC")} onRelease={() => sendControllerButtonReleased("ESC")}>ESC</HoldButton>
+                                                    <HoldButton className="w-22" disabled={!isConnected} onPress={() => sendControllerButtonPressed("RESET")} onRelease={() => sendControllerButtonReleased("RESET")}>RESET</HoldButton>
                                                 </div>
                                                 <div className="flex items-center justify-center">
-                                                    <Button className="w-22">CONFIRM</Button>
+                                                    <HoldButton className="w-22" disabled={!isConnected} onPress={() => sendControllerButtonPressed("CONFIRM")} onRelease={() => sendControllerButtonReleased("CONFIRM")}>CONFIRM</HoldButton>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col gap-2">
