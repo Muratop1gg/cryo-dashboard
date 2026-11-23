@@ -511,33 +511,6 @@ function SessionTimer({ time, isRunning, isPaused }: { time: number; isRunning: 
   );
 }
 
-function StatusPulse({ status }: { status: any }) {
-  const color = () => {
-    switch (status) {
-      case "working":
-        return "rgba(120,220,180,0.7)"
-      case "stdby":
-        return "rgba(255, 255, 255,0.3)"
-      case "drying":
-        return "rgba(245, 167, 66, 0.9)"
-      default:
-        return "rgba(255, 255, 255,0.3)"
-    }
-  }
-
-  return (
-    <div className="relative w-3 h-3 shrink-0">
-      <div
-        className="absolute inset-0 rounded-full"
-        style={{
-          background: color(),
-          animation: status == "working" ? "pulseRing 2s ease-in-out infinite" : "none",
-        }}
-      />
-    </div>
-  );
-}
-
 function Clock() {
   const [time, setTime] = useState(new Date());
   useEffect(() => {

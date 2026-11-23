@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { WS } from "@/lib/api";
 
 // WebSocket URL
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws";
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8080/ws";
 
 export function useWebSocket(
   onEvent?: (event: WS.Event) => void

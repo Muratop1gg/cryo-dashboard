@@ -1,7 +1,7 @@
 // api.ts
 
 // ========== БАЗОВЫЙ URL ==========
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 async function apiRequest<T>(

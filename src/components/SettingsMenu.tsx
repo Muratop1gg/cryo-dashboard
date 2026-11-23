@@ -38,6 +38,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [warning, setWarning] = useState<string | null>(null);
 
     const { sensorData } = useWebSocket();
 
@@ -181,6 +182,7 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
 
         setLoading(true);
         setError(null);
+        setWarning(null);
 
         try {
             const settingsToSave: api.POST.SettingsData = {};
@@ -219,6 +221,9 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
 
             if (result) {
                 setOriginalSettings({ ...currentSettings });
+                if (result.message && result.message.includes("не применены")) {
+                    setWarning(result.message);
+                }
                 // onOpenChange();
             } else {
                 setError('Ошибка при сохранении настроек');
@@ -397,6 +402,19 @@ function SettingsMenu({ open = false, onOpenChange }: SettingsMenuProps) {
                         <button
                             className="ml-4 text-white hover:text-red-300"
                             onClick={() => setError(null)}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
+
+                {/* Предупреждения (настройки сохранены, но не применены на ПЛК) */}
+                {warning && (
+                    <div className="absolute top-4 right-4 bg-amber-500/20 border border-amber-500 text-amber-300 px-4 py-2 rounded-lg z-50">
+                        {warning}
+                        <button
+                            className="ml-4 text-white hover:text-amber-200"
+                            onClick={() => setWarning(null)}
                         >
                             ✕
                         </button>
