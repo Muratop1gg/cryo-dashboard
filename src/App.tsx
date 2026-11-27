@@ -118,10 +118,13 @@ export default function App() {
       // ограничиваем буфер, чтобы не рос бесконечно
       return next.length > 50 ? next.slice(-50) : next;
     });
+  }, []);
 
-    switch (event.event_id) {
-      case 100:
-        // Старт процедуры
+  // Состояние процедуры приходит отдельным сообщением procedure_state,
+  // т.к. коды event_id 1xx заняты группой "Простой"
+  const handleProcedureState = useCallback((state: WS.ProcedureState) => {
+    switch (state.action) {
+      case "start":
         console.log("Starting procedure");
         setSessionTime(HISTORY_LENGTH);
         setIsTimerPaused(false);
@@ -130,21 +133,21 @@ export default function App() {
         setIsChartActive(true);
         break;
 
-      case 101:
+      case "pause":
         console.log("Pause timer");
         setIsTimerPaused(true);
         setIsTimerRunning(false);
         setIsChartActive(false);
         break;
 
-      case 102:
+      case "resume":
         console.log("Resume timer");
         setIsTimerPaused(false);
         setIsTimerRunning(true);
         setIsChartActive(true);
         break;
 
-      case 103:
+      case "stop":
         console.log("Stop timer");
         setSessionTime(0);
         setIsTimerPaused(false);
@@ -186,7 +189,7 @@ export default function App() {
 
   }, [isTimerRunning, isTimerPaused]);
 
-  const { sensorData, isConnected, connectionStatus } = useWebSocket(handleEvent);
+  const { sensorData, isConnected, connectionStatus } = useWebSocket(handleEvent, handleProcedureState);
 
   const api = useApi();
 
